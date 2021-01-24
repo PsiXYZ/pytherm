@@ -1,0 +1,11 @@
+benzene: 6*ACH
+butanol-2: 2*CH3 1*CH2 1*CH 1*OH
+propanol-2: 1*P2
+propanol-1: 1*P1
+water: 1*H2O
+hexane: 2*CH3 4*CH2
+propyl acetate: 1*CH3 2*CH2 1*CH3COO
+acetonitrile: 1*CH3CN
+toluene: 5*ACH 1*ACCH3
+ic8: 5*CH3 1*C 1*CH 1*CH2
+naphthalene: 8*ACH 2*AC
