@@ -9,3 +9,4 @@ acetonitrile: 1*CH3CN
 toluene: 5*ACH 1*ACCH3
 ic8: 5*CH3 1*C 1*CH 1*CH2
 naphthalene: 8*ACH 2*AC
+c10: 2*CH3 8*CH2

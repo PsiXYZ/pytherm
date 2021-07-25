@@ -1,0 +1,86 @@
+hexene-1: 1*CH3 3*CH2 1*CH2=CH
+hexene-2: 1*CH3 2*CH2 1*CH=CH
+hexane: 2*CH3 4*CH2
+heptane: 2*CH3 5*CH2
+toluene: 5*ACH 1*ACCH3
+et-benzene: 5*ACH 1*ACCH2 1*CH3
+propanol-2: 2*CH3 1*CH 1*OH
+propanol-1: 1*CH3 2*CH2 1*OH
+water: 1*H2O
+methanol: 1*CH3OH
+ethanol: 1*CH3 1*CH2 1*OH
+octanol-1: 1*CH3 7*CH2 1*OH
+acetonitrile: 1*CH3CN
+c6: 2*CH3 4*CH2
+c8: 2*CH3 6*CH2
+1m-c7: 3*CH3 4*CH2 1*CH
+ic8: 5*CH3 1*C 1*CH 1*CH2
+c9: 2*CH3 7*CH2
+c10: 2*CH3 8*CH2
+c11: 2*CH3 9*CH2
+c12: 2*CH3 10*CH2
+c13: 2*CH3 11*CH2
+c14: 2*CH3 12*CH2
+c15: 2*CH3 13*CH2
+c16: 2*CH3 14*CH2
+c17: 2*CH3 15*CH2
+c18: 2*CH3 16*CH2
+benzene: 6*ACH
+butanol-2: 2*CH3 1*CH2 1*CH 1*OH
+propyl acetate: 1*CH3 2*CH2 1*CH3COO
+cyclohexane: 6*CH2
+met-cyclohexane: 5*CH2 1*CH 1*CH3
+cyclohexanol: 5*CH2 1*CH 1*OH
+methyl-naphthalene: 1*CH3 7*ACH 3*AC
+anthracene: 10*ACH 4*AC
+1m-anthracene: 9*ACH 4*AC 1*ACCH3
+2m-anthracene: 8*ACH 4*AC 2*ACCH3
+et-anthracene: 9*ACH 4*AC 1*ACCH2 1*CH3
+3m-anthracene: 7*ACH 4*AC 3*ACCH3
+etm-anthracene: 8*ACH 4*AC 1*ACCH3 1*ACCH2 1*CH3
+p-anthracene: 9*ACH 4*AC 1*ACCH2 1*CH2 1*CH3
+pyrene: 10*ACH 6*AC
+1m-pyrene: 9*ACH 6*AC 1*ACCH3
+xylene: 4*ACH 2*ACCH3
+phenanthrene: 10*ACH 4*AC
+2m-phenan: 8*ACH 6*AC 2*CH3
+naphthacene: 12*ACH 6*AC
+trimetil-benz: 3*ACH 3*ACCH3
+naphthalene: 8*ACH 2*AC
+1m-napht: 7*ACH 3*AC 1*CH3
+2m-napht: 6*ACH 4*AC 2*CH3
+3m-napht: 5*ACH 5*AC 3*CH3
+1m-napht2: 7*ACH 2*AC 1*ACCH3
+2m-napht2: 6*ACH 2*AC 2*ACCH3
+3m-napht2: 5*ACH 2*AC 3*ACCH3
+1e-napht2: 7*ACH 2*AC 1*ACCH2 1*CH3
+em-napht2: 6*ACH 2*AC 1*ACCH2 1*CH3 1*ACCH3
+p-napht2: 7*ACH 2*AC 1*ACCH2 1*CH2 1*CH3
+4m-napht2: 4*ACH 6*AC 4*ACCH3
+prop-napht: 7*ACH 3*AC 1*CH3 2*CH2
+propen-napht: 7*ACH 3*AC 1*CH2=CH 1*CH2
+ipropen-napht: 7*ACH 3*AC 1*CH2=C 1*CH3
+phenol: 5*ACH 1*ACOH
+s-napht: 6*ACH 4*AC 1*CH2 1*C 1*CH3 1*OH
+dimetdiphen: 8*ACH 4*AC 2*CH3
+1m-benzene: 5*ACH 1*ACCH3
+2m-benzene: 4*ACH 2*ACCH3
+3m-benzene: 3*ACH 3*ACCH3
+4m-benzene: 2*ACH 4*ACCH3
+e-benzene: 5*ACH 1*ACCH2 1*CH3
+x1: 7*ACH 2*AC 1*ACCH2 1*CH2=CH
+x2: 9*ACH 2*AC 1*ACCH3
+x3: 3*ACH 2*ACCH3 1*ACCH2 1*CH=CH 1*CH3
+h: 4*ACH 2*ACCH 1*CH2 2*CH3
+biphenyl: 10*ACH 2*AC
+1m-biphenyl: 9*ACH 2*AC 1*ACCH3
+fluorene: 9*ACH 4*AC
+1m-fluorene: 8*ACH 4*AC 1*ACCH3
+pyridine: 1*C5H5N
+2-methylpyridine: 1*CH3 1*C5H4N
+aniline: 5*ACH 1*ACNH2
+diphenylmethane: 10*ACH 1*AC 1*ACCH2
+diphenylmethane2: 10*ACH 2*AC 1*CH2
+perv-i-butanol: 1*OH 1*CH 1*CH2 2*CH3
+hlyc: 2*CH2 1*CH 3*OH
+butanol-1: 1*OH 3*CH2 1*CH3

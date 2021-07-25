@@ -15,10 +15,10 @@ class Group:
         self.R = float(r)
         self.Q = float(q)
 
-
 # return a(i,j) matrix
 def get_inter(mode):
-    n = 56 #кол-во групп
+    df = open(path + mode + "\\2t.csv")
+    n = int(df.readline()[:-1].split(";")[0])
 
     table = []
     for i in range(n):
@@ -27,16 +27,15 @@ def get_inter(mode):
             a.append("-")
         table.append(a)
 
-    df = open(path + mode + "\\2t.csv")
     buf = []
     for line in df:
-        buf.append(line[:-2:].split(";"))
+        buf.append(line[:-1:].split(";"))
 
     for i in buf[1::]:
-        table[int(i[0]) - 1][int(i[1]) - 1] = float(i[2])
-
+        table[int(i[0]) - 1][int(i[1]) - 1] = [float(i[2]), float(i[3]), float(i[4])]
+    for i in range(n):
+        table[i][i] = [0, 0, 0]
     return table
-
 
 # return {gr name: Group}
 def get_groups(mode):
@@ -55,11 +54,14 @@ def get_groups(mode):
 
 
 # возвращает словарь  {название вещества: [группа, кол-во]}, вкачивает файл полностью, лучше потом сделать поиск
-def get_tsubs(mode):
+def get_tsubs(mode, subs_mode):
 
     data = {}
+    if subs_mode == "с":
+        df = open(path + "\\sub.csv")
+    else:
+        df = open(path + "\\" + mode + "\\sub.csv")
 
-    df = open(path + mode + "\\sub.csv")
     buf = []
     for line in df:
         buf.append(line.split(":"))
@@ -78,9 +80,9 @@ def get_tsubs(mode):
 
 
 # {name: x} --> {name: sub}
-def create_ph(inp, f_name):
+def create_ph(inp, mode, subs_mode):
     phase = {}
-    tsubs = get_tsubs(f_name)  # словарь веществ - групп
+    tsubs = get_tsubs(mode, subs_mode)  # словарь веществ - групп
 
     for s in inp:
         gr = {}
@@ -89,6 +91,3 @@ def create_ph(inp, f_name):
         phase[s] = Sub(0, gr)
 
     return phase
-
-# f = open("activity\\db\\unifac\\g\\sub.csv")
-# get_tsubs("g")

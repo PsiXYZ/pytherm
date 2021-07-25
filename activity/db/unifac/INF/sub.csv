@@ -11,6 +11,7 @@ methanol: 1*CH3OH
 ethanol: 1*CH3 1*CH2 1*OH
 octanol-1: 1*CH3 7*CH2 1*OH
 acetonitrile: 1*CH3CN
+c6: 2*CH3 4*CH2
 c8: 2*CH3 6*CH2
 1m-c7: 3*CH3 4*CH2 1*CH
 ic8: 5*CH3 1*C 1*CH 1*CH2
@@ -80,3 +81,6 @@ pyridine: 1*C5H5N
 aniline: 5*ACH 1*ACNH2
 diphenylmethane: 10*ACH 1*AC 1*ACCH2
 diphenylmethane2: 10*ACH 2*AC 1*CH2
+perv-i-butanol: 1*OH 1*CH 1*CH2 2*CH3
+hlyc: 2*CH2 1*CH 3*OH
+butanol-1: 1*OH 3*CH2 1*CH3
