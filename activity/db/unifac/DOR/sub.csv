@@ -31,7 +31,6 @@ propyl acetate: 1*CH3 2*CH2 1*CH3COO
 cyclohexane: 6*CH2
 met-cyclohexane: 5*CH2 1*CH 1*CH3
 cyclohexanol: 5*CH2 1*CH 1*OH
-methyl-naphthalene: 1*CH3 7*ACH 3*AC
 anthracene: 10*ACH 4*AC
 1m-anthracene: 9*ACH 4*AC 1*ACCH3
 2m-anthracene: 8*ACH 4*AC 2*ACCH3
@@ -41,15 +40,10 @@ etm-anthracene: 8*ACH 4*AC 1*ACCH3 1*ACCH2 1*CH3
 p-anthracene: 9*ACH 4*AC 1*ACCH2 1*CH2 1*CH3
 pyrene: 10*ACH 6*AC
 1m-pyrene: 9*ACH 6*AC 1*ACCH3
-xylene: 4*ACH 2*ACCH3
-phenanthrene: 10*ACH 4*AC
-2m-phenan: 8*ACH 6*AC 2*CH3
+2m-pyrene: 8*ACH 6*AC 2*ACCH3
 naphthacene: 12*ACH 6*AC
 trimetil-benz: 3*ACH 3*ACCH3
 naphthalene: 8*ACH 2*AC
-1m-napht: 7*ACH 3*AC 1*CH3
-2m-napht: 6*ACH 4*AC 2*CH3
-3m-napht: 5*ACH 5*AC 3*CH3
 1m-napht2: 7*ACH 2*AC 1*ACCH3
 2m-napht2: 6*ACH 2*AC 2*ACCH3
 3m-napht2: 5*ACH 2*AC 3*ACCH3
@@ -60,28 +54,17 @@ p-napht2: 7*ACH 2*AC 1*ACCH2 1*CH2 1*CH3
 prop-napht: 7*ACH 3*AC 1*CH3 2*CH2
 propen-napht: 7*ACH 3*AC 1*CH2=CH 1*CH2
 ipropen-napht: 7*ACH 3*AC 1*CH2=C 1*CH3
-phenol: 5*ACH 1*ACOH
-s-napht: 6*ACH 4*AC 1*CH2 1*C 1*CH3 1*OH
 dimetdiphen: 8*ACH 4*AC 2*CH3
 1m-benzene: 5*ACH 1*ACCH3
 2m-benzene: 4*ACH 2*ACCH3
 3m-benzene: 3*ACH 3*ACCH3
 4m-benzene: 2*ACH 4*ACCH3
 e-benzene: 5*ACH 1*ACCH2 1*CH3
-x1: 7*ACH 2*AC 1*ACCH2 1*CH2=CH
-x2: 9*ACH 2*AC 1*ACCH3
-x3: 3*ACH 2*ACCH3 1*ACCH2 1*CH=CH 1*CH3
-h: 4*ACH 2*ACCH 1*CH2 2*CH3
 biphenyl: 10*ACH 2*AC
 1m-biphenyl: 9*ACH 2*AC 1*ACCH3
 fluorene: 9*ACH 4*AC
 1m-fluorene: 8*ACH 4*AC 1*ACCH3
 pyridine: 1*C5H5N
 2-methylpyridine: 1*CH3 1*C5H4N
-aniline: 5*ACH 1*ACNH2
 diphenylmethane: 10*ACH 1*AC 1*ACCH2
 diphenylmethane2: 10*ACH 2*AC 1*CH2
-perv-i-butanol: 1*OH 1*CH 1*CH2 2*CH3
-hlyc: 2*CH2 1*CH 3*OH
-butanol-1: 1*OH(P) 3*CH2 1*CH3
-butanol-2: 1*OH(S) 1*CH 1*CH2 2*CH3

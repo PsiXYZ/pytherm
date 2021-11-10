@@ -1,9 +1,17 @@
-def minimize(min_f, bon, fabs=1e-5):
-    ksi = [0] * len(bon)
+def minimize(min_f, bounds, fabs=1e-5):
+    """
+
+    :param function min_f:
+    :param list bounds: bounds for each reaction
+    :param float fabs: absolute value of sum abs min_f to complete the optimization
+    :return:
+    """
+    
+    ksi = [0] * len(bounds)
     # задание начальных кси наиболее близких к 0 из границ оптимазции
-    for i in range(len(bon)):
-        m = bon[i][0]
-        for j in bon[i]:
+    for i in range(len(bounds)):
+        m = bounds[i][0]
+        for j in bounds[i]:
             if abs(j) < abs(m):
                 m = j
         ksi[i] = m
@@ -11,12 +19,12 @@ def minimize(min_f, bon, fabs=1e-5):
     while(1):
         lga = min_f(ksi)
         max_i = 0
-
+        # поиск наиболее далеких от равновесия компонентов
         for i in range(len(lga)):
             if abs(lga[i]) > abs(lga[max_i]):
                 max_i = i
 
-        cur_bound = bon[max_i].copy()
+        cur_bound = bounds[max_i].copy()
         while(1):
             # если > 0 то нужно уменьшать
             if lga[max_i] > 0:

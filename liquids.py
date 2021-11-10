@@ -173,12 +173,11 @@ def find_lle(ph1, ph2, am, notifier= lle_notifier):
     # ph1 -> ph2
     n1 = 10
     n2 = 10
-    min_ksi = 1e-08
+    min_ksi = 1e-08  # минимально возможные начения ksi
 
     comp = list(ph1.keys())
     n_comp = len(comp)
 
-    # двигаю кси для начала оптимизации
     ksi = [0] * n_comp
 
     bound = []
@@ -200,11 +199,6 @@ def find_lle(ph1, ph2, am, notifier= lle_notifier):
         r_mat.append([0] * n_comp)
     for i in range(n_comp):
         r_mat[i][i] = 1
-
-
-
-
-
 
     def get_loga(k):
         n1 = 0
