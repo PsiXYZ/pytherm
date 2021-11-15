@@ -31,23 +31,26 @@ propyl acetate: 1*CH3 2*CH2 1*CH3COO
 cyclohexane: 6*CH2
 met-cyclohexane: 5*CH2 1*CH 1*CH3
 cyclohexanol: 5*CH2 1*CH 1*OH
+anthracene: 10*ACH 4*AC
 1m-anthracene: 9*ACH 4*AC 1*ACCH3
 2m-anthracene: 8*ACH 4*AC 2*ACCH3
 et-anthracene: 9*ACH 4*AC 1*ACCH2 1*CH3
 3m-anthracene: 7*ACH 4*AC 3*ACCH3
 etm-anthracene: 8*ACH 4*AC 1*ACCH3 1*ACCH2 1*CH3
 p-anthracene: 9*ACH 4*AC 1*ACCH2 1*CH2 1*CH3
+pyrene: 10*ACH 6*AC
 1m-pyrene: 9*ACH 6*AC 1*ACCH3
 2m-pyrene: 8*ACH 6*AC 2*ACCH3
 naphthacene: 12*ACH 6*AC
 trimetil-benz: 3*ACH 3*ACCH3
+naphthalene: 8*ACH 2*AC
 1m-napht2: 7*ACH 2*AC 1*ACCH3
 2m-napht2: 6*ACH 2*AC 2*ACCH3
 3m-napht2: 5*ACH 2*AC 3*ACCH3
 1e-napht2: 7*ACH 2*AC 1*ACCH2 1*CH3
 em-napht2: 6*ACH 2*AC 1*ACCH2 1*CH3 1*ACCH3
 p-napht2: 7*ACH 2*AC 1*ACCH2 1*CH2 1*CH3
-4m-napht2: 4*ACH 2*AC 4*ACCH3
+4m-napht2: 4*ACH 6*AC 4*ACCH3
 prop-napht: 7*ACH 3*AC 1*CH3 2*CH2
 propen-napht: 7*ACH 3*AC 1*CH2=CH 1*CH2
 ipropen-napht: 7*ACH 3*AC 1*CH2=C 1*CH3
@@ -58,40 +61,10 @@ dimetdiphen: 8*ACH 4*AC 2*CH3
 4m-benzene: 2*ACH 4*ACCH3
 e-benzene: 5*ACH 1*ACCH2 1*CH3
 biphenyl: 10*ACH 2*AC
-biphenyl2: 10*ACH 2*AC 1*CH2
 1m-biphenyl: 9*ACH 2*AC 1*ACCH3
-1m-biphenyl2: 9*ACH 3*AC 1*CH3 1*CH2
-2m-biphenyl: 8*ACH 2*AC 2*ACCH3
-2m-biphenyl2: 8*ACH 4*AC 2*CH3 1*CH2
-3m-biphenyl: 7*ACH 2*AC 3*ACCH3
+fluorene: 9*ACH 4*AC
 1m-fluorene: 8*ACH 4*AC 1*ACCH3
-2m-fluorene: 7*ACH 4*AC 2*ACCH3
 pyridine: 1*C5H5N
 2-methylpyridine: 1*CH3 1*C5H4N
 diphenylmethane: 10*ACH 1*AC 1*ACCH2
 diphenylmethane2: 10*ACH 2*AC 1*CH2
-tgnf: 4*ACH 2*ACCH2 2*CH2
-1m-tgnf: 3*ACH 2*ACCH2 2*CH2 1*ACCH3
-tgnf2: 4*ACH 2*AC 4*CH2
-1m-tgnf2: 3*ACH 2*AC 4*CH2 1*ACCH3
-2m-tgnf2: 2*ACH 2*AC 4*CH2 2*ACCH3
-3m-tgnf2: 1*ACH 2*AC 4*CH2 3*ACCH3
-carbazole: 1*C5H5N
-tiophen: 1*C4H4S
-pyrole: 1*C4H8N+
------------------------------------: 1*CH3
-naphthalene: 8*ACH 2*AC
-methylnaphthalene: 7*ACH 2*AC 1*ACCH3
-ethylnaphthalene: 7*ACH 2*AC 1*ACCH2 1*CH3
-dimethylnaphthalene: 6*ACH 2*AC 2*ACCH3
-propylnaphthalene: 7*ACH 2*AC 1*ACCH2 1*CH2 1*CH3
-isopropylnaphthalene: 7*ACH 2*AC 1*ACCH 2*CH3
-methylethylnaphthalene: 6*ACH 2*AC 1*ACCH2 1*CH3 1*ACCH3
-trimethylnaphathalene: 5*ACH 2*AC 3*ACCH3
-fluorene: 9*ACH 4*AC
-anthracene: 10*ACH 4*AC
-methylanthracene: 9*ACH 4*AC 1*ACCH3
-ethylanthracene: 9*ACH 4*AC 1*ACCH2 1*CH3
-dimethylanthracene: 8*ACH 4*AC 2*ACCH3
-pyrene: 10*ACH 6*AC
-methylpyrene: 9*ACH 6*AC 1*ACCH3

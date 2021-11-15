@@ -1,3 +1,13 @@
+"""
+VLE: published DDB parameters, 2021 JAN, https://www.ddbst.com/published-parameters-unifac.html
+LLE: Magnussen1981, DOI: https://doi.org/10.1021/i200013a024
+INF: Bastos1988, DOI: https://doi.org/10.1021/ie00079a030
+DOR: published DDB parameters, 2021 JAN, https://www.ddbst.com/PublishedParametersUNIFACDO.html
+NIST2015: Kang2015, DOI: https://doi.org/10.1016/j.fluid.2014.12.042
+
+"""
+
+
 from math import log, exp, e
 from .db.unifac import io
 
@@ -5,6 +15,10 @@ R = 8.314462
 
 
 class Unifac:
+    """
+    VLE, LLE, INF: original COMB and RES (1 param)
+    DOR, NIST: mod COMB and res (3 param)
+    """
 
     get_comb = None
 
@@ -20,8 +34,8 @@ class Unifac:
         self.phase = self.create_ph(inp)  # словарь название в-ва - Sub из io
         self.t_groups = io.get_groups(mode)  # собственные параметры групп
 
-        if self.mode == "DOR":
-            self.get_comb = self.get_comb_dor
+        if self.mode == "DOR" or self.mode == "NIST2015":
+            self.get_comb = self.get_comb_mod
         else:
             self.get_comb = self.get_comb_or
         self.inter = io.get_inter(mode)  # параметры взаимодействия
@@ -30,7 +44,7 @@ class Unifac:
         """Returns activity of the components
 
         :param dictionary inp: component dictionary ("substance name": concentration)
-        :param int t: temperature in K
+        :param float t: temperature in K
         :return: activity dictionary ("substance name": activity)
         """
         for i in inp:
@@ -40,6 +54,7 @@ class Unifac:
         res = self.get_res(self.phase, t)
         y = {}
         for i in inp:
+            print(i, e ** comb[i], e ** res[i])
             lny = comb[i] + res[i]
             y[i] = e ** lny
         return y
@@ -92,7 +107,7 @@ class Unifac:
             rez[i] = lny
         return rez
 
-    def get_comb_dor(self, inp, z=10):
+    def get_comb_mod(self, inp, z=10):
         def get_r(name):
             r = 0
             for i in inp[name].groups:
@@ -111,7 +126,7 @@ class Unifac:
                 rj = get_r(j)
                 s += (rj ** (3 / 4)) * inp[j].x
             ri = get_r(name)
-            return (ri ** (3 / 4)) * inp[name].x / s
+            return (ri ** (3 / 4)) / s
 
         def get_f(name):
             s = 0
@@ -137,7 +152,7 @@ class Unifac:
             ti = get_t(i)
             xi = inp[i].x
 
-            lny = log(fic / xi) + 1 - fic / xi - z / 2 * qi * (log(fi / ti) + 1 - fi / ti)
+            lny = 1 - fic +  log(fic) - z / 2 * qi * (log(fi / ti) + 1 - fi / ti)
             rez[i] = lny
         return rez
 

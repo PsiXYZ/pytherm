@@ -14,6 +14,6 @@ def read_subs():
 
 def write_subs(data):
     with open(path + '/out.csv', 'w') as outfile:
-        wr = csv.writer(outfile)
-        wr.writerow(['Formula', 'E', 'S', 'A', 'B', 'V', 'L'])
+        wr = csv.writer(outfile, delimiter = ';', lineterminator= '\n')
+        wr.writerow(['Formula', 'E, R2', 'S, pH', 'aH', 'B, bH', 'V, Vx', 'L, logL'])
         wr.writerows(data)
