@@ -19,6 +19,7 @@ def calc_all_subs():
     subs = io.read_subs()
     data = [0] * len(subs)
     for i in range(len(subs)):
+        print(subs[i])
         gr = {}
         buf = [0] * 7
         E, S, A, B, V, L = 0, 0, 0, 0, 0, 0

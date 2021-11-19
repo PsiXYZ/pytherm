@@ -70,6 +70,7 @@ def get_tsubs(mode, subs_mode):
         buf[i][1] = buf[i][1][1::]
 
     for i in buf:
+        print(i)
         b = i[1].split(" ")
         a = []
         for j in b:

@@ -7,7 +7,7 @@ path = os.path.abspath(__file__)[:-5:]
 def read_subs():
     subs = []
     with open(path + '/subs.csv',  'r') as csvfile:
-        data = csv.reader(csvfile)
+        data = csv.reader(csvfile, delimiter = ';', lineterminator= '\n')
         for line in data:
             subs.append(line)
     return subs[1:]

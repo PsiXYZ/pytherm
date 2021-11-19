@@ -1,0 +1,26 @@
+Substance;Formula;B;GR1;GR2
+naphthalene;C10H8;19;8*=CH- 2*C;0
+methylnaphthalene;C11H10;22;7*=CH- 2*C 1*=C< 1*-CH3;0
+ethylnaphthalene;C12H12;25;7*=CH- 2*C 1*=C< 1*>CH2 1*-CH3;0
+dimethylnaphthalene;C12H12;25;6*=CH- 2*C 2*=C< 2*-CH3;0
+propylnaphthalene;C13H14;27;7*=CH- 2*C 1*=C< 2*>CH2 1*-CH3;0
+isopropylnaphthalene;C13H14;27;7*=CH- 2*C 1*=C< 1*>CH- 2*-CH3;0
+methylethylnaphthalene;C13H14;27;6*=CH- 2*C 2*=C< 1*>CH2 2*-CH3;0
+trimethylnaphathalene;C13H14;27;5*=CH- 2*C 3*=C< 3*-CH3;0
+fluorene;C13H10;25;8*=CH- 2*C 2*=C< 1*>CH2;0
+anthracene;C14H10;26;10*=CH- 4*C;0
+methylanthracene;C15H12;29;9*=CH- 4*C 1*=C< 1*-CH3;0
+ethylanthracene;C16H14;32;9*=CH- 4*C 1*=C< 1*>CH2 1*-CH3;0
+dimethylanthracene;C16H14;32;8*=CH- 4*C 2*=C< 2*-CH3;0
+pyrene;C16H10;29;10*=CH- 6*C;0
+methylpyrene;C17H12;32;9*=CH- 6*C 1*=C< 1*-CH3;0
+dibenzotiophene;C12H8S;22;8*=CH- 2*C 2*=C< 1*-S-ar;0
+methyldibenzotiophene;C13H10S;25;7*=CH- 2*C 3*=C< 1*-S-ar 1*-CH3;0
+ethyldibenzotiophene;C14H12S;28;7*=CH- 2*C 3*=C< 1*-S-ar 1*>CH2 1*-CH3;0
+dimethyldibenzotiophene;C14H12S;28;6*=CH- 2*C 4*=C< 1*-S-ar 2*-CH3;0
+dibenzofuran;C12H8O;22;8*=CH- 2*C 2*=C< 1*-O-ar;0
+methyldibenzofuran;C13H10O;25;7*=CH- 2*C 3*=C< 1*-O-ar 1*-CH3;0
+ethyldibenzofuran;C14H12O;28;7*=CH- 2*C 3*=C< 1*-O-ar 1*>CH2 1*-CH3;0
+dimethyldibenzofuran;C14H12O;28;6*=CH- 2*C 4*=C< 1*-O-ar 2*-CH3;0
+carbazole;C12H9N;23;8*=CH- 2*C 2*=C< 1*>NHpy;1*>NHpy
+methylcarbazole;C13H11N;26;7*=CH- 2*C 3*=C< 1*>NHpy 1*-CH3;1*>NHpy
