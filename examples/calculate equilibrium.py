@@ -4,7 +4,7 @@ import pytherm.activity.unifac as uf
 comp = ['hexane', 'acetonitrile']
 target = "toluene"
 mode = "VLE"
-am = uf.Unifac(comp, mode=mode)
+am = uf.Unifac(comp, unifac_mode=mode)
 
 ph1 = {}
 ph2 = {}

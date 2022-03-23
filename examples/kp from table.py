@@ -26,7 +26,7 @@ with open(inp_file, 'r') as df:
         subs.append(row[0])
 
 if mode_eq:
-    am = uf.Unifac(comp, mode=mode_unifac)
+    am = uf.Unifac(comp, unifac_mode=mode_unifac)
     ph1 = {}
     ph2 = {}
 
@@ -48,7 +48,7 @@ for s in subs:
     p2[s] = 0
 
 
-    am = uf.Unifac(p1, mode=mode_unifac)
+    am = uf.Unifac(p1, unifac_mode=mode_unifac)
     rez = lq.get_kp(am, p1, p2, r, s)
     out_kp[s] = rez
 

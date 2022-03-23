@@ -11,7 +11,7 @@ def get_yinf(activity_model,
     low concentration
 
     Args:
-        am (activity_model): model for activity calculation
+        am (ActivityModel): model for activity calculation
         ph (dict[str, float]): _description_
         comp_name (str): name of target component from ph
 
@@ -38,7 +38,7 @@ def get_k_molar(activity_model,
     """Calculate partition coefficient using molar fraction
 
     Args:
-        activity_model (activity_model): model for activity calculation
+        activity_model (ActivityModel): model for activity calculation
         phase1 (dict[str, float]): component dictionary for phase 1
         phase2 (dict[str, float]): component dictionary for phase 2
         comp_name (str): target component name
@@ -59,7 +59,7 @@ def get_kp(am,
     """Calculate partition coefficient
 
     Args:
-        am (_type_): model for activity calculation
+        am (ActivityModel): model for activity calculation
         phase1 (dict[float]): component dictionary for phase 1
         phase2 (dict[float]): component dictionary for phase 2
         molar_volume (dict[str, float]): molar volume dictionary

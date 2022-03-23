@@ -1,13 +1,19 @@
 """
-VLE: published DDB parameters, 2021 JAN, https://www.ddbst.com/published-parameters-unifac.html
-LLE: Magnussen1981, DOI: https://doi.org/10.1021/i200013a024
-INF: Bastos1988, DOI: https://doi.org/10.1021/ie00079a030
-DOR: published DDB parameters, 2021 JAN, https://www.ddbst.com/PublishedParametersUNIFACDO.html
-NIST2015: Kang2015, DOI: https://doi.org/10.1016/j.fluid.2014.12.042
+parameter sources:
+    VLE: published DDB parameters, 2021 JAN,
+        https://www.ddbst.com/published-parameters-unifac.html
+    LLE: Magnussen1981,
+        DOI: https://doi.org/10.1021/i200013a024
+    INF: Bastos1988,
+        DOI: https://doi.org/10.1021/ie00079a030
+    DOR: published DDB parameters, 2021 JAN,
+        https://www.ddbst.com/PublishedParametersUNIFACDO.html
+    NIST2015: Kang2015,
+        DOI: https://doi.org/10.1016/j.fluid.2014.12.042
 
+    VLE, LLE, INF: original COMB and RES (1 param)
+    DOR, NIST: mod COMB and res (3 param)
 """
-
-
 from math import log, exp, e
 from .db.unifac import io
 
@@ -15,43 +21,41 @@ R = 8.314462
 
 
 class Unifac:
+    """Unifac model for activity coeffcient calculation
     """
-    VLE, LLE, INF: original COMB and RES (1 param)
-    DOR, NIST: mod COMB and res (3 param)
-    """
-
     get_comb = None
 
-    def __init__(self, inp, mode="VLE", sub="с"):
-        """
+    def __init__(self, inp: dict,
+                 unifac_mode: str = "VLE",
+                 substance_source: str = "general"):
+        self.unifac_mode = unifac_mode
+        self.substance_source = substance_source
+        self.phase = self.create_ph(inp)
+        self.t_groups = io.get_groups(unifac_mode)
 
-        :param inp: input dictionary {"sub name":concentration} for initialization
-        :param mode: mode for parameters (VLE, LLE, INF, DOR)
-        :param sub: mode for subs table ('c' for common subs file, 'p' for mode subs file)
-        """
-        self.mode = mode
-        self.subs_mode = sub
-        self.phase = self.create_ph(inp)  # словарь название в-ва - Sub из io
-        self.t_groups = io.get_groups(mode)  # собственные параметры групп
-
-        if self.mode == "DOR" or self.mode == "NIST2015":
+        if self.unifac_mode in ('DOR', 'NIST2015'):
             self.get_comb = self.get_comb_mod
         else:
-            self.get_comb = self.get_comb_or
-        self.inter = io.get_inter(mode)  # параметры взаимодействия
+            self.get_comb = self.get_comb_original
+        self.interaction_matrix = io.get_interactions(unifac_mode)
 
-    def get_y(self, inp, t=298):
-        """Returns activity of the components
+    def get_y(self,
+              inp: dict[str, float],
+              temperature=298) -> dict[str, float]:
+        """Calculate activity coefficient for input dict
 
-        :param dictionary inp: component dictionary ("substance name": concentration)
-        :param float t: temperature in K
-        :return: activity dictionary ("substance name": activity)
+        Args:
+            inp (dict[str, float]): input dictionary {name: conentration}
+            temperature (optional): Temperature in K. Defaults to 298.
+
+        Returns:
+            dict[str, float]: activity coefficient for inp substances
         """
         for i in inp:
             self.phase[i].x = inp[i]
 
         comb = self.get_comb(self.phase)
-        res = self.get_res(self.phase, t)
+        res = self.get_res(self.phase, temperature)
         y = {}
         for i in inp:
             print(i, e ** comb[i], e ** res[i])
@@ -59,7 +63,16 @@ class Unifac:
             y[i] = e ** lny
         return y
 
-    def get_comb_or(self, inp, z=10):
+    def get_comb_original(self, inp: dict[str, float], z=10) -> dict:
+        """Calculate combinatorial component using original equation
+
+        Args:
+            inp (dict[str, float]): input dictionary {name: conentration}
+            z (optional): Coordination number. Defaults to 10.
+
+        Returns:
+            dict: combinatorial component
+        """
         def get_r(name):
             r = 0
             for i in inp[name].groups:
@@ -107,7 +120,16 @@ class Unifac:
             rez[i] = lny
         return rez
 
-    def get_comb_mod(self, inp, z=10):
+    def get_comb_mod(self, inp, z=10) -> dict:
+        """Calculate combinatorial component using modified equation
+
+        Args:
+            inp (dict[str, float]): input dictionary {name: conentration}
+            z (optional): Coordination number. Defaults to 10.
+
+        Returns:
+            dict: combinatorial component
+        """
         def get_r(name):
             r = 0
             for i in inp[name].groups:
@@ -152,11 +174,21 @@ class Unifac:
             ti = get_t(i)
             xi = inp[i].x
 
-            lny = 1 - fic +  log(fic) - z / 2 * qi * (log(fi / ti) + 1 - fi / ti)
+            lny = 1 - fic + log(fic) - z / 2 * qi * \
+                (log(fi / ti) + 1 - fi / ti)
             rez[i] = lny
         return rez
 
-    def get_res(self, inp, temp):
+    def get_res(self, inp, temperature) -> dict:
+        """Calculate combinatorial component using original equation
+
+        Args:
+            inp (dict[str, float]): input dictionary {name: conentration}
+            temperature (float): Temperature in K.
+
+        Returns:
+            dict: resudual component
+        """
         g = {}  # группа: Г
         gp = {}  # вещество: {группа: Гi}
         rez = {}
@@ -202,19 +234,24 @@ class Unifac:
                 s2 = 0
                 # сумма под первым логарифмом
                 for t in gr:
-                    a_mk = self.inter[self.t_groups[t].id - 1][self.t_groups[s].id - 1]
-                    s1 += tet[t] * exp(- (a_mk[0] + a_mk[1] * temp + a_mk[2] * temp ** 2) / temp)
+                    a_mk = self.interaction_matrix[self.t_groups[t].id -
+                                                   1][self.t_groups[s].id - 1]
+                    s1 += tet[t] * exp(- (a_mk[0] + a_mk[1]
+                                       * temperature + a_mk[2] * temperature ** 2) / temperature)
 
                 # сумма под вторым логарифмом
                 for t in gr:
-                    a_km = self.inter[self.t_groups[s].id - 1][self.t_groups[t].id - 1]
+                    a_km = self.interaction_matrix[self.t_groups[s].id -
+                                                   1][self.t_groups[t].id - 1]
                     num = tet[t] * exp(
-                        - (a_km[0] + a_km[1] * temp + a_km[2] * temp ** 2) / temp)  # значение в числителе для m
+                        - (a_km[0] + a_km[1] * temperature + a_km[2] * temperature ** 2) / temperature)  # значение в числителе для m
                     den = 0
                     # расчет знаменателя
                     for u in gr:
-                        a_nm = self.inter[self.t_groups[u].id - 1][self.t_groups[t].id - 1]
-                        den += tet[u] * exp(- (a_nm[0] + a_nm[1] * temp + a_nm[2] * temp ** 2) / temp)
+                        a_nm = self.interaction_matrix[self.t_groups[u].id -
+                                                       1][self.t_groups[t].id - 1]
+                        den += tet[u] * exp(- (a_nm[0] + a_nm[1]
+                                            * temperature + a_nm[2] * temperature ** 2) / temperature)
                     s2 += num / den
                 rez[s] = self.t_groups[s].Q * (1 - log(s1) - s2)
             return rez
@@ -224,7 +261,8 @@ class Unifac:
         # расчет Г в растворе содержащем только один тип молекул Гik
         for i in inp:
             buf = {}
-            buf[i] = inp[i]  # создание фазы из одного компонента, концентрации можно не менять тк все нормируется
+            # создание фазы из одного компонента, концентрации можно не менять тк все нормируется
+            buf[i] = inp[i]
             gp[i] = get_g(buf)
 
         for i in inp:
@@ -236,21 +274,22 @@ class Unifac:
         return rez
 
     def create_ph(self, inp):
-        ph = io.create_ph(inp, self.mode, self.subs_mode)
+        ph = io.create_phase(inp, self.unifac_mode, self.substance_source)
         return ph
 
     def get_ge(self, inp, t=298, n=1):
-        y = self.get_y(inp, t=t)
+        y = self.get_y(inp, temperature=t)
         ge = 0
         for sub in inp:
             ge += n*inp[sub]*log(y[sub])
         return R*t*ge
 
-    def __get_t2(self, i, j):
-        print(self.inter[i - 1][j - 1])
+    def get_t2(self, i, j):
+        print(self.interaction_matrix[i - 1][j - 1])
 
-    def __get_t1(self, name):
-        print(self.t_groups[name].id, self.t_groups[name].R, self.t_groups[name].Q)
+    def get_t1(self, name):
+        print(self.t_groups[name].id,
+              self.t_groups[name].R, self.t_groups[name].Q)
 
-    def __get_gr(self, name):
+    def get_gr(self, name):
         print(self.phase[name].groups)

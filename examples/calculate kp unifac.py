@@ -18,6 +18,6 @@ ph2["hexane"] = 0.0629
 ph2["acetonitrile"] = 1 - ph2["hexane"]
 ph2[target] = 0
 
-am = uf.Unifac(ph1, mode="VLE")
+am = uf.Unifac(ph1, unifac_mode="VLE")
 rez = lq.get_kp(am, ph1, ph2, r, target)
 print(rez)
