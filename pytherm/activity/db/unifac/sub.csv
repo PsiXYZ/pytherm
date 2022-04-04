@@ -65,3 +65,5 @@ trimethylanthracene: 7*ACH 4*AC 3*ACCH3
 pyrene: 10*ACH 6*AC
 methylpyrene: 9*ACH 6*AC 1*ACCH3
 dimethylpyrene: 8*ACH 6*AC 2*ACCH3
+benzene: 6*ACH
+c21: 2*CH3 19*CH2
