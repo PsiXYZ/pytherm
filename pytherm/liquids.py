@@ -101,6 +101,7 @@ def lle_notifier(f, ph1, ph2):
 def find_lle(phase1: dict[str, float],
              phase2: dict[str, float],
              activity_model,
+             temperature = 298,
              notifier=lle_notifier):
     """Calculate eqilibrium composition
 
@@ -159,8 +160,8 @@ def find_lle(phase1: dict[str, float],
         for i in range(comp_number):
             phase1[components[i]] = n_1[i] / n1
             phase2[components[i]] = n_2[i] / n2
-        y1 = activity_model.get_y(phase1)
-        y2 = activity_model.get_y(phase2)
+        y1 = activity_model.get_y(phase1, temperature=temperature)
+        y2 = activity_model.get_y(phase2, temperature=temperature)
         for i in range(comp_number):
             a1[i] = phase1[components[i]] * y1[components[i]]
             a2[i] = phase2[components[i]] * y2[components[i]]

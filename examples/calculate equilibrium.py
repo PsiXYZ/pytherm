@@ -15,4 +15,4 @@ ph1['acetonitrile'] = 0
 ph2['hexane'] = 0
 ph2['acetonitrile'] = 1
 
-lq.find_lle(ph1, ph2, am)
+lq.find_lle(ph1, ph2, am, temperature=298)

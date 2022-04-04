@@ -12,7 +12,7 @@ parameter sources:
         DOI: https://doi.org/10.1016/j.fluid.2014.12.042
 
     VLE, LLE, INF: original COMB and RES (1 param)
-    DOR, NIST: mod COMB and res (3 param)
+    DOR, NIST2015: mod COMB and res (3 param)
 """
 from math import log, exp, e
 from .db.unifac import io
@@ -58,7 +58,7 @@ class Unifac:
         res = self.get_res(self.phase, temperature)
         y = {}
         for i in inp:
-            print(i, e ** comb[i], e ** res[i])
+            # print(i, e ** comb[i], e ** res[i])
             lny = comb[i] + res[i]
             y[i] = e ** lny
         return y
