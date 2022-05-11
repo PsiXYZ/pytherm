@@ -2,4 +2,5 @@
 * t.py
 * t.csv
 .vscode
+.idea
 __pycache__
