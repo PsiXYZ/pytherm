@@ -67,3 +67,38 @@ methylpyrene: 9*ACH 6*AC 1*ACCH3
 dimethylpyrene: 8*ACH 6*AC 2*ACCH3
 benzene: 6*ACH
 c21: 2*CH3 19*CH2
+-----------------------------------: 1*CH3
+fr1: 2*CH3 13.67*CH2 0.47*ACH 0.09*AC
+fr2: 1*CH3 3.41*CH2 6.42*ACH 1.29*AC
+as1: 27.67*ACH 27.67*AC 47.67*CH2 1*CH3
+as1/2: 13.84*ACH 13.84*AC 23.34*CH2 0.5*CH3
+as1*2: 55.34*ACH 55.34*AC 95.34*CH2 2*CH3
+as1-pyr: 37*ACH 22*AC 44*CH2 1*CH3
+as1-ovy: 23*ACH 30*AC 51*CH2 1*CH3
+as2: 64*CH2 56*AC 56*ACH
+as2-pyr: 53*CH2 46*AC 76*ACH
+as2-ovy: 68*CH2 60*AC 47*ACH
+as3: 12.33*ACH 12.33*AC 8.33*CH2 1*CH3
+---------------------------------: 1*CH3
+3-Carene: 3*CH3 2*CH2 2*CH 1*C 1*CH=C
+3-Carene-Cl(p): 2*CH3 2*CH2 2*CH 1*C 1*CH=C 1*CH2Cl
+3-Carene-Cl(v): 3*CH3 1*CH2 2*CH 1*C 1*CH=C 1*CHCl
+3-Carene-Cl(t): 3*CH3 2*CH2 1*CH 1*C 1*CH=C 1*CCl
+3-Carene-HCl: 3*CH3 3*CH2 2*CH 1*C 1*CCl
+3-Carene-HCl-Cl(p): 2*CH3 3*CH2 2*CH 1*C 1*CH2Cl 1*CCl
+3-Carene-HCl-Cl(v): 3*CH3 2*CH2 2*CH 1*C 1*CHCl 1*CCl
+3-Carene-HCl-Cl(t): 3*CH3 3*CH2 1*CH 1*C 2*CCl
+3-Carene-2Cl: 3*CH3 2*CH2 2*CH 1*C 1*CHCl 1*CCl
+3-Carene-2Cl-Cl(p): 2*CH3 2*CH2 2*CH 1*C 1*CH2Cl 1*CHCl 1*CCl
+3-Carene-2Cl-Cl(v): 3*CH3 1*CH2 2*CH 1*C 2*CHCl 1*CCl
+3-Carene-2Cl-Cl(t): 3*CH3 2*CH2 1*CH 1*C 1*CHCl 2*CCl
+3-Carene-2Cl(zam-pp): 1*CH3 2*CH2 2*CH 1*C 1*CH=C 2*CH2Cl
+3-Carene-2Cl(zam-pv): 2*CH3 1*CH2 2*CH 1*C 1*CH=C 1*CH2Cl 1*CHCl
+---------------------------------: 1*CH3
+DDT: 2*ACCl 1*CCl3 8*ACH 2*AC 1*CH
+C6Cl6: 6*ACCl
+C6H6Cl6: 6*CHCl
+DDE: 2*ACCl 1*CCl2 8*ACH 2*AC 1*C
+C12H6Cl4: 4*ACCl 6*ACH 2*AC
+C12H5Cl5: 5*ACCl 5*ACH 2*AC
+C12H4Cl6: 6*ACCl 4*ACH 2*AC

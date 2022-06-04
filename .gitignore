@@ -1,6 +1,7 @@
 *.pyc
 * t.py
 * t.csv
+* t.txt
 .vscode
 .idea
 __pycache__
