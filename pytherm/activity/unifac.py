@@ -39,6 +39,8 @@ class Unifac:
             self.get_comb = self.get_comb_original
         self.interaction_matrix = io.get_interactions(unifac_mode)
 
+        self.__check_inter()
+
     def get_y(self,
               inp: dict[str, float],
               temperature=298) -> dict[str, float]:
@@ -236,22 +238,28 @@ class Unifac:
                 for t in gr:
                     a_mk = self.interaction_matrix[self.t_groups[t].id -
                                                    1][self.t_groups[s].id - 1]
-                    s1 += tet[t] * exp(- (a_mk[0] + a_mk[1]
-                                       * temperature + a_mk[2] * temperature ** 2) / temperature)
+                    s1 += tet[t] * exp(- (a_mk[0]
+                                          + a_mk[1] * temperature
+                                          + a_mk[2] * temperature ** 2)
+                                       / temperature)
 
                 # сумма под вторым логарифмом
                 for t in gr:
                     a_km = self.interaction_matrix[self.t_groups[s].id -
                                                    1][self.t_groups[t].id - 1]
                     num = tet[t] * exp(
-                        - (a_km[0] + a_km[1] * temperature + a_km[2] * temperature ** 2) / temperature)  # значение в числителе для m
+                        - (a_km[0]
+                           + a_km[1] * temperature
+                           + a_km[2] * temperature ** 2)
+                        / temperature)  # значение в числителе для m
                     den = 0
                     # расчет знаменателя
                     for u in gr:
-                        a_nm = self.interaction_matrix[self.t_groups[u].id -
-                                                       1][self.t_groups[t].id - 1]
-                        den += tet[u] * exp(- (a_nm[0] + a_nm[1]
-                                            * temperature + a_nm[2] * temperature ** 2) / temperature)
+                        a_nm = self.interaction_matrix[self.t_groups[u].id - 1][self.t_groups[t].id - 1]
+                        den += tet[u] * exp(- (a_nm[0]
+                                               + a_nm[1] * temperature
+                                               + a_nm[2] * temperature ** 2)
+                                            / temperature)
                     s2 += num / den
                 rez[s] = self.t_groups[s].Q * (1 - log(s1) - s2)
             return rez
@@ -292,4 +300,30 @@ class Unifac:
               self.t_groups[name].R, self.t_groups[name].Q)
 
     def get_gr(self, name):
-        print(self.phase[name].groups)
+        return self.phase[name].groups
+
+    def get_gr_str(self, name):
+        s = ""
+        g = self.phase[name].groups
+        for i in g:
+            s += f"{g[i]}*{i} "
+        return(s[:-1])
+
+    def __check_inter(self):
+        gr = []
+        s = self.phase
+        # создается список с именами всех групп в данной фазе
+        for i in s:
+            for j in s[i].groups:
+                if j not in gr:
+                    gr.append(j)
+
+        for s in gr:
+            for t in gr:
+                a_mk = self.interaction_matrix[self.t_groups[t].id -
+                                               1][self.t_groups[s].id - 1]
+                if a_mk == "-":
+                    raise Warning(
+                        f"NO INTERACTION PARAMETERS FOR: {s} - {t} "
+                        f"({self.t_groups[s].id} - {self.t_groups[t].id})"
+                    )
