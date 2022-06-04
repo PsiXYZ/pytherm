@@ -110,7 +110,7 @@ def get_tsubs(unifac_mode: str, substance_source: str) -> dict:
         b = i[1].split(" ")
         a = []
         for j in b:
-            a.append([j.split("*")[1], int(j.split("*")[0])])
+            a.append([j.split("*")[1], float(j.split("*")[0])]) #int -> float
         data[i[0]] = a
 
     return data
