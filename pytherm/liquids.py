@@ -1,6 +1,8 @@
 from math import log, log10
 from .solver import minimize
 
+R = 8.314
+
 
 def get_yinf(activity_model,
              phase: dict[str, float],
@@ -101,7 +103,7 @@ def lle_notifier(f, ph1, ph2):
 def find_lle(phase1: dict[str, float],
              phase2: dict[str, float],
              activity_model,
-             temperature = 298,
+             temperature=298,
              notifier=lle_notifier):
     """Calculate eqilibrium composition
 
@@ -175,3 +177,38 @@ def find_lle(phase1: dict[str, float],
     f = minimize(get_loga, bounds)[1]
     if notifier is not None:
         lle_notifier(f, phase1, phase2)
+
+
+def calculate_solubility(activity_model,
+                         comp_name,
+                         T,
+                         T_m,
+                         H_m,
+                         bounds=(1e-20, 0.99),
+                         f_tol=1e-18):
+    phase = {}
+    phase[comp_name[0]] = 1
+    phase[comp_name[1]] = 0
+    lnx = H_m / R * (1/T_m - 1/T)
+
+    a = bounds[0]
+    b = bounds[1]
+
+    def f(x):
+        phase[comp_name[1]] = x
+        phase[comp_name[0]] = 1 - x
+        y = activity_model.get_y(phase, temperature=T)
+        return (log(phase[comp_name[1]] * y[comp_name[1]]) - lnx)
+
+    while(1):
+        x = (a + b) / 2
+        if f(x) * f(a) < 0:
+            b = x
+        elif f(x) * f(b) < 0:
+            a = x
+        # print(x, a, b, f(x))
+        if abs(b - a) < f_tol or abs(f(x)) < 1e-10:
+            break
+
+    # print(f"X: {x:.1e} \tM: {x * 354 / 18:.1e} \tD: {f(x):.1e}")
+    return x

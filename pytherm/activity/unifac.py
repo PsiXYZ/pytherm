@@ -327,3 +327,6 @@ class Unifac:
                         f"NO INTERACTION PARAMETERS FOR: {s} - {t} "
                         f"({self.t_groups[s].id} - {self.t_groups[t].id})"
                     )
+
+    def change_t2(self, i, j, vals):
+        self.interaction_matrix[i - 1][j - 1] = vals
