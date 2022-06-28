@@ -106,8 +106,8 @@ class Pitzer:
                     m_a = self.ph[a]
                     B = self.get_B(c, a)
                     C = self.get_C(c, a)
-                    value_ca += m_c * m_a * (B + Z * C)
-            return 2 * value_ca
+                    value_ca += m_c * m_a * (2 * B + Z * C)
+            return value_ca
 
         def get_cc():
             value_cc = 0
@@ -158,10 +158,12 @@ class Pitzer:
         Z = self.get_Z()
         gibbs = self.get_f(I, A)
         gibbs += get_ca()
-        gibbs += get_cc()
-        gibbs += get_aa()
-        gibbs += get_cca()
-        gibbs += get_caa()
+        if len(self.cations) > 1:
+            gibbs += get_cc()
+            gibbs += get_cca()
+        if len(self.anions) > 1:
+            gibbs += get_aa()
+            gibbs += get_caa()
         return gibbs
 
     def get_harvie_j(self, x):
@@ -264,21 +266,56 @@ class Pitzer:
             y[s] = np.exp(self.grad(s))
         return y
 
-    def grad(self, s, dm=1e-3):
-        ph_b = self.ph
+    def grad(self, s, dm=1e-10):
+        ph_b = {}
+        for i in self.ph:
+            ph_b[i] = self.ph[i]
+
         self.ph[s] = ph_b[s] - dm
         y1 = self.get_gibbs()
         self.ph[s] = ph_b[s] + dm
         y2 = self.get_gibbs()
 
+        self.ph[s] = ph_b[s]
         return (y2 - y1) / (2 * dm)
 
+    def get_a_water(self, ph, n_m=55.50837):
+        osmotic = self.get_osmotic()
+        s_m = sum(self.ph)
+        lna = - osmotic / (n_m / s_m)
+        return np.exp(lna)
 
+    def get_osmotic(self, ph, dw=1e-3):
+        ph1 = {}
+        ph2 = {}
+        w_water = 1
+
+        n_i = {}
+        for i in ph:
+            n_i[i] = ph[i]
+
+        for s in ph:
+            ph1[s] = n_i[s] / (w_water - dw)
+        self.ph = ph1
+        y1 = self.get_gibbs()
+
+        for s in ph:
+            ph2[s] = n_i[s] / (w_water + dw)
+        self.ph = ph2
+        y2 = self.get_gibbs()
+
+        self.ph = ph
+        return (y2 - y1) / (2 * dw)
+
+
+c = 7
 ph = {
-    "Na": 0.001,
-    "Cl": 0.001
+    "H": c,
+    "Cl": c
 }
 
 am = Pitzer(ph)
 print(am.get_gibbs())
-print(am.get_y(ph))
+a = am.get_y(ph)
+print('y', a['H'], a['Cl'])
+print('lny', np.log(a['H']))
