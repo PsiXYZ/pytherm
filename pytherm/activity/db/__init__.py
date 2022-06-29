@@ -1,1 +1,9 @@
-__all__ = ["unifac"]
+from . import (
+    pitzer,
+    unifac
+)
+
+from .pitzer import (
+    ParametersPitzer,
+    Harvie84
+)

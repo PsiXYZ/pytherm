@@ -118,3 +118,27 @@ def react_string(c_v, su):
         elif c_v[i] > 0:
             s2 += str(int(abs(c_v[i]))) + "•" + su[i] + " + "
     return s1[:-2] + "= " + s2[:-2]
+
+
+def get_charge_dict():
+    charge = {
+        'H': +1,
+        'NH4': +1,
+        'Na': +1,
+        'K': +1,
+        'Ca': +2,
+        'Mg': +2,
+        'MgOH': +1,
+        'HSO4': -1,
+        'SO4': -2,
+        'NO3': -1,
+        'Cl': -1,
+        'HCO3': -1,
+        'CO3': -2,
+        'OH': -1,
+        'NH3': 0,
+        'CO2 ': 0,
+        'CaCO3': 0,
+        'MgCO3': 0,
+    }
+    return charge

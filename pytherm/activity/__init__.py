@@ -1,1 +1,7 @@
-__all__ = ["db", "unifac"]
+# from . import (
+#     pitzer,
+#     unifac,
+# )
+
+from .unifac import Unifac
+from .pitzer import Pitzer

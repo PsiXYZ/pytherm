@@ -1,33 +1,23 @@
-from math import exp, log, sqrt
-import db.pitzer.parameters as db
+from math import exp, sqrt
 import numpy as np
+from ..sm import get_charge_dict
+from .db import pitzer as datasets
 
 
 class Pitzer:
-    charge = {}
+    ph = []
     cations = []
     anions = []
     neutral = []
-    I = 0
-    Z = 0
-    ph = {}
+    charge = {}
 
-    pure_substance = {}  # [b0, b1, b2, c, a1, a2]
-    theta = {}
-    psi = {}
-    lamda = {}
+    db: datasets.ParametersPitzer
 
-    def __init__(self, ph):
-        self.charge = db.charge
+    def __init__(self, ph, db):
+        self.charge = get_charge_dict()
+        self.db = db
 
-        for i in db.pure:
-            self.pure_substance[f'{i[0]} - {i[1]}'] = i[2:]
-
-        self.theta = db.theta_pp + db.theta_mm
-        self.psi = db.psi_ppm + db.psi_mmp
-        self.lamda = db.lamda
-
-        self.ph = ph
+        self.ph = list(ph.keys())
         for s in ph:
             if self.charge[s] > 0:
                 self.cations.append(s)
@@ -36,95 +26,38 @@ class Pitzer:
             else:
                 self.neutral.append(s)
 
-    def get_A(self, ro=0.99707, D=78.4, T=298):
-        # return 1400684*(ro/(D * T)) ** (3/2)
-        return 0.13422 * (4.1725332 - 0.1481291 * T ** (0.5) + 1.5188505 * 10 ** (-5) * T ** 2 - 1.8016317 * 10 ** (-8) * T ** 3 + 9.3816144 * 10 ** (-10) * T ** (3.5))
+    def get_f(self, I, A, b=1.2):
+        return - 4 * A * I * np.log(1 + b * np.sqrt(I)) / b
 
-    def get_I(self):
+    def get_A(self, ro=0.99707, D=78.4, T=298):
+        return (0.13422 *
+                (4.1725332 - 0.1481291 * T ** (0.5)
+                 + 1.5188505 * 10 ** (-5) * T ** 2
+                 - 1.8016317 * 10 ** (-8) * T ** 3
+                 + 9.3816144 * 10 ** (-10) * T ** (3.5)))
+
+    def get_I(self, ph):
         I = 0
-        for s in self.ph:
-            I += self.ph[s] * self.charge[s] ** 2
+        for s in ph:
+            I += ph[s] * self.charge[s] ** 2
         return I / 2
 
-    def get_F(self):
-        def get_f_y():
-            I = self.I
-            b = 1.2
-
-            f = (sqrt(I) / (1 + b * sqrt(I))) + \
-                (2 / b) * log(1 + b * sqrt(I))
-            return f
-
-        def get_B_s(s1, s2):
-            if self.pure_substance[f'{s1} - {s2}'][-1] == 0:
-                b1 = self.pure_substance[f'{s1} - {s2}'][1]
-                a1 = self.pure_substance[f'{s1} - {s2}'][4]
-                I = self.I
-                g1 = get_g_s(a1 * sqrt(I))
-                return b1 * g1 / I
-            else:
-                I = self.I
-                b1 = self.pure_substance[f'{s1} - {s2}'][1]
-                b2 = self.pure_substance[f'{s1} - {s2}'][2]
-
-                a1 = self.pure_substance[f'{s1} - {s2}'][4]
-                a2 = self.pure_substance[f'{s1} - {s2}'][5]
-
-                g1 = get_g_s(a1 * sqrt(I))
-                g2 = get_g_s(a2 * sqrt(I))
-
-                return b1 * g1 / I + b2 * g2 / I
-
-        def get_g_s(x):
-            return - 2 * (1 - (1 + x + 1/2 * x ** 2) * exp(-x)) / x ** 2
-
-        f_y = get_f_y()
-        A = self.get_A()
-
-        ca = 0
-        for s1 in self.cations:
-            for s2 in self.anions:
-                B_s = get_B_s(s1, s2)
-                ca += self.ph[s1] * self.ph[s2] * B_s
-
-        cc = 0
-        for s1 in self.cations:
-            for s2 in self.cations:
-                if s1 == s2:
-                    continue
-                if f'{s1} - {s2}' in self.theta:
-                    cc += self.ph[s1] * self.ph[s2] * \
-                        self.theta[f'{s1} - {s2}']
-
-        aa = 0
-        for s1 in self.anions:
-            for s2 in self.anions:
-                if s1 == s2:
-                    continue
-                if f'{s1} - {s2}' in self.theta:
-                    aa += self.ph[s1] * self.ph[s2] * \
-                        self.theta[f'{s1} - {s2}']
-
-        return - A * f_y + ca + cc + aa
-
-    def get_B(self, s1, s2):
-        if self.pure_substance[f'{s1} - {s2}'][-1] == 0:
-            I = self.I
-            b0 = self.pure_substance[f'{s1} - {s2}'][0]
-            b1 = self.pure_substance[f'{s1} - {s2}'][1]
-            a1 = self.pure_substance[f'{s1} - {s2}'][4]
-            g1 = self.get_g(a1 * sqrt(I))
+    def get_B(self, s1, s2, I):
+        if self.db['ca'][s1][s2][-1] == 0:
+            b0 = self.db['ca'][s1][s2][0]
+            b1 = self.db['ca'][s1][s2][1]
+            a1 = self.db['ca'][s1][s2][4]
+            g1 = self.get_g(a1 * np.sqrt(I))
             return b0 + b1 * g1
         else:
-            I = self.I
-            b0 = self.pure_substance[f'{s1} - {s2}'][0]
-            b1 = self.pure_substance[f'{s1} - {s2}'][1]
-            b2 = self.pure_substance[f'{s1} - {s2}'][2]
-            a1 = self.pure_substance[f'{s1} - {s2}'][4]
-            a2 = self.pure_substance[f'{s1} - {s2}'][5]
+            b0 = self.db['ca'][s1][s2][0]
+            b1 = self.db['ca'][s1][s2][1]
+            b2 = self.db['ca'][s1][s2][2]
+            a1 = self.db['ca'][s1][s2][4]
+            a2 = self.db['ca'][s1][s2][5]
 
-            g1 = self.get_g(a1 * sqrt(I))
-            g2 = self.get_g(a2 * sqrt(I))
+            g1 = self.get_g(a1 * np.sqrt(I))
+            g2 = self.get_g(a2 * np.sqrt(I))
 
             return b0 + b1 * g1 + b2 * g2
 
@@ -132,194 +65,93 @@ class Pitzer:
         return 2 * (1 - (1 + x) * exp(-x)) / x ** 2
 
     def get_C(self, s1, s2):
-        C_f = self.pure_substance[f'{s1} - {s2}'][3]
+        C_f = self.db['ca'][s1][s2][3]
         z1 = self.charge[s1]
         z2 = self.charge[s2]
 
         return C_f / (2 * sqrt(abs(z1 * z2)))
 
-    def get_Z(self):
+    def get_Z(self, ph):
         z = 0
-        for s in self.ph:
-            z += abs(self.charge[s]) * self.ph[s]
+        for s in ph:
+            z += np.abs(self.charge[s]) * ph[s]
         return z
 
-    def get_y(self, ph):
-        pass
-
-    def get_fi(self, s1, s2):
-        if f'{s1} - {s2}' in self.theta:
-            return self.theta[f'{s1} - {s2}']
-        else:
-            return 0
-
-    def get_psi(self, s1, s2, s3):
-        if f'{s1} - {s2} - {s3}' in self.psi:
-            return self.psi[f'{s1} - {s2} - {s3}']
-        else:
-            return 0
-
-    def get_lamda(self, s1, s2):
-        if f'{s1} - {s2}' in self.lamda:
-            return self.lamda[f'{s1} - {s2}']
-        else:
-            return 0
-
-    def get_lny_m(self, substance):
-        self.I = self.get_I()
-        self.Z = self.get_Z()
-        z_m = self.charge[substance]
-        F = self.get_F()
-
-        p1 = 0
-        for a in self.anions:
-            B = self.get_B(substance, a)
-            C = self.get_C(substance, a)
-            p1 += self.ph[a] * (2 * B + self.Z * C)
-
-        p2 = 0
-        for c in self.cations:
-            m = self.ph[c]
-            fi = self.get_fi(substance, c)
-
-            buf = 0
-            for a in self.anions:
-                psi = self.get_psi(substance, c, a)
-                buf += self.ph[a] * psi
-
-            p2 += m * (2 * fi + buf)
-
-        p3 = 0
-        for a1 in self.anions:
-            for a2 in self.anions:
-                if a1 == a2:
-                    continue
-                p3 += self.ph[a1] * self.ph[a2] * \
-                    self.get_psi(a1, a2, substance)
-
-        p4 = 0
-        for c in self.cations:
-            for a in self.anions:
-                p4 += self.ph[c] * self.ph[a] * self.get_C(c, a)
-        p4 *= abs(z_m)
-
-        return z_m ** 2 * F + p1 + p2 + p3 + p4
-
-    def get_lny_x(self, substance):
-        self.I = self.get_I()
-        self.Z = self.get_Z()
-        z_x = self.charge[substance]
-        F = self.get_F()
-
-        p1 = 0
-        for c in self.cations:
-            B = self.get_B(c, substance)
-            C = self.get_C(c, substance)
-            p1 += self.ph[c] * (2 * B + self.Z * C)
-
-        p2 = 0
-        for a in self.anions:
-            m = self.ph[a]
-            fi = self.get_fi(substance, a)
-
-            buf = 0
+    def get_gibbs(self, ph):
+        def get_ca():
+            value_ca = 0
             for c in self.cations:
-                psi = self.get_psi(substance, a, c)
-                buf += self.ph[a] * psi
-
-            p2 += m * (2 * fi + buf)
-
-        p3 = 0
-        for c1 in self.anions:
-            for c2 in self.anions:
-                if c1 == c2:
-                    continue
-                p3 += self.ph[c1] * self.ph[c2] * \
-                    self.get_psi(c1, c2, substance)
-
-        p4 = 0
-        for c in self.cations:
-            for a in self.anions:
-                p4 += self.ph[c] * self.ph[a] * self.get_C(c, a)
-        p4 *= abs(z_x)
-
-        return z_x ** 2 * F + p1 + p2 + p3 + p4
-
-    def get_lny_n(self, substance):
-        p1 = 0
-        for c in self.cations:
-            p1 += self.ph[c] * (2 * self.get_lamda(substance, c))
-
-        p2 = 0
-        for a in self.anions:
-            p2 += self.ph[a] * (2 * self.get_lamda(substance, a))
-
-    def get_o(self):
-        def get_B_f(self, s1, s2):
-            I = self.I
-            b0 = self.pure_substance[f'{s1} - {s2}'][0]
-            b1 = self.pure_substance[f'{s1} - {s2}'][1]
-            b2 = self.pure_substance[f'{s1} - {s2}'][2]
-            a1 = self.pure_substance[f'{s1} - {s2}'][4]
-            a2 = self.pure_substance[f'{s1} - {s2}'][5]
-
-            return b0 + b1 * exp(-a1 * sqrt(I)) + b2 * exp(-a2 * sqrt(I))
-
-        self.I = self.get_I()
-        self.Z = self.get_Z()
-
-        p1 = 0
-        for i in self.ph:
-            p1 += self.ph[i]
-        p1 = 2 / p1
-
-        p2 = - (self.get_A() * self.I ** (3 / 2)) / \
-            (1 + 1.2 * self.I ** (1 / 2))
-
-        p3 = 0
-        for c in self.cations:
-            m_c = self.ph[c]
-            for a in self.anions:
-                B = get_B_f(c, a)
-                C = self.get_C(c, a)
-                m_a = self.ph[a]
-                p3 += m_c * m_a * (B + self.Z * C)
-
-        p4 = 0
-        for c1 in self.cations:
-            m_c1 = self.ph[c1]
-            for c2 in self.cations:
-                if c1 == c2:
-                    continue
-                m_c2 = self.ph[c2]
-                fi = self.get_fi(c1, c2)
-
-                buf = 0
+                m_c = ph[c]
                 for a in self.anions:
-                    m_a = self.ph[a]
-                    psi = self.get_psi(c1, c2, a)
-                    buf += m_a * psi
+                    if self.db.is_exist('ca', c, a):
+                        m_a = ph[a]
+                        B = self.get_B(c, a, I)
+                        C = self.get_C(c, a)
+                        value_ca += m_c * m_a * (2 * B + Z * C)
+            return value_ca
 
-                p4 += m_c1 * m_c2 * (fi + buf)
+        def get_cc():
+            value_cc = 0
+            for c1 in self.cations:
+                m_c1 = ph[c1]
+                for c2 in self.cations:
+                    if self.db.is_exist('cc', c1, c2):
+                        m_c2 = ph[c2]
+                        fi = self.db['cc'][c1][c2] + \
+                            self.get_theta_e(c1, c2, I)
+                        value_cc += m_c1 * m_c2 * fi
+            return value_cc
 
-        p5 = 0
-        for a1 in self.cations:
-            m_a1 = self.ph[a1]
-            for a2 in self.cations:
-                if a1 == a2:
-                    continue
-                m_a2 = self.ph[a2]
-                fi = self.get_fi(a1, a2)
+        def get_aa():
+            value_aa = 0
+            for a1 in self.cations:
+                m_a1 = ph[a1]
+                for a2 in self.cations:
+                    if self.db.is_exist('aa', a1, a2):
+                        m_a2 = ph[a2]
+                        fi = self.db['aa'][a1][a2] + \
+                            self.get_theta_e(a1, a2, I)
+                        value_aa += m_a1 * m_a2 * fi
+            return value_aa
 
-                buf = 0
-                for c in self.anions:
-                    m_c = self.ph[c]
-                    psi = self.get_psi(a1, a2, c)
-                    buf += m_c * psi
+        def get_cca():
+            value_cca = 0
+            for c1 in self.cations:
+                m_c1 = ph[c1]
+                for c2 in self.cations:
+                    m_c2 = ph[c2]
+                    for a in self.anions:
+                        if self.db.is_exist('cca', 'c1', 'c2', 'a'):
+                            m_a = self.ph[a]
+                            psi = self.db['cca'][c1][c2][a]
+                            value_cca += 0.5 * m_c1 * m_c2 * m_a * psi
+            return value_cca
 
-                p5 += m_a1 * m_a2 * (fi + buf)
+        def get_caa():
+            value_caa = 0
+            for a1 in self.cations:
+                m_a1 = ph[a1]
+                for a2 in self.cations:
+                    m_a2 = ph[a2]
+                    for c in self.anions:
+                        if self.db.is_exist('caa', c, a1, a2):
+                            m_c = ph[c]
+                            psi = self.db['caa'][c][a1][a2]
+                            value_caa += 0.5 * m_a1 * m_a2 * m_c * psi
+            return value_caa
 
-        return p1 + p2 + p3 + p4 + p5
+        I = self.get_I(ph)
+        A = self.get_A()
+        Z = self.get_Z(ph)
+        gibbs = self.get_f(I, A)
+        gibbs += get_ca()
+        if len(self.cations) > 1:
+            gibbs += get_cc()
+            gibbs += get_cca()
+        if len(self.anions) > 1:
+            gibbs += get_aa()
+            gibbs += get_caa()
+        return gibbs
 
     def get_harvie_j(self, x):
         akI = (
@@ -392,30 +224,132 @@ class Pitzer:
         Jp = 0.25 + 0.5 * dz_dx * (d0 - d2)  # Eq. (B-30)
         return J, Jp
 
-    def get_x_ij(self, z1, z2):
+    def get_x_ij(self, z1, z2, I):
         A = self.get_A()
-        return 6 * z1 * z2 * A * sqrt(self.I)
+        return 6 * z1 * z2 * A * np.sqrt(I)
 
-    def get_theta_e(self, z_m, z_n):
-        x_mn = self.get_x_ij(z_m, z_n)
-        x_mm = self.get_x_ij(z_m, z_m)
-        x_nn = self.get_x_ij(z_n, z_n)
+    def get_theta_e(self, s1, s2, I):
+        z_m = self.charge[s1]
+        z_n = self.charge[s2]
+
+        x_mn = self.get_x_ij(z_m, z_n, I)
+        x_mm = self.get_x_ij(z_m, z_m, I)
+        x_nn = self.get_x_ij(z_n, z_n, I)
         J1, Jp1 = self.get_harvie_j(x_mn)
         J2, Jp2 = self.get_harvie_j(x_mm)
         J3, Jp3 = self.get_harvie_j(x_nn)
-        I = self.I
 
         E = (z_m * z_n / (4 * I)) * (J1 - 0.5 * J2 - 0.5 * J3)
-        Ep = - E / I + (z_m * z_n / (8 * I ** 2)) * (x_mn * Jp1 - 0.5 * x_mm * Jp2 - 0.5 * x_nn * Jp3)
-        return E, Ep
+        # Ep = (- E / I + (z_m * z_n / (8 * I ** 2))
+        #       * (x_mn * Jp1 - 0.5 * x_mm * Jp2 - 0.5 * x_nn * Jp3))
+        return E
+
+    def get_y(self, ph):
+        y = {}
+        for s in self.ph:
+            y[s] = np.exp(self.grad(ph, s))
+        return y
+
+    def grad(self, ph, s, dm=1e-10):
+        ph_b = {}
+        for i in self.ph:
+            ph_b[i] = ph[i]
+
+        ph_b[s] = ph[s] - dm
+        y1 = self.get_gibbs(ph_b)
+        ph_b[s] = ph[s] + dm
+        y2 = self.get_gibbs(ph_b)
+
+        return (y2 - y1) / (2 * dm)
+
+    def get_a_water(self, ph, n_m=55.50837):
+        osmotic = self.get_osmotic()
+        s_m = 0
+        for i in ph:
+            s_m += ph[i]
+        lna = - osmotic / (n_m / s_m)
+        return np.exp(lna)
+
+    def get_osmotic(self, ph, dw=1e-4, R=8.3145, T=298):
+        ph1 = {}
+        ph2 = {}
+        w_water = 1
+
+        n_i = {}
+        for i in ph:
+            n_i[i] = ph[i]
+
+        for s in ph:
+            ph1[s] = n_i[s] / (w_water - dw)
+        self.ph = ph1
+        y1 = self.get_gibbs() * (w_water - dw) * R * T
+
+        for s in ph:
+            ph2[s] = n_i[s] / (w_water + dw)
+        self.ph = ph2
+        y2 = self.get_gibbs() * (w_water + dw) * R * T
+
+        self.ph = ph
+        dG_dw = (y2 - y1) / (2 * dw)
+        s_m = 0
+        for i in ph:
+            s_m += ph[i]
+        return 1 - dG_dw / (R * T * s_m)
 
 
-ph = {
-    "Mg": 2,
-    "SO4": 2
-}
+# m_nacl = 3.9
+# m_naoh = 4
+# ph13 = {
+#     "Na": m_nacl + m_naoh,
+#     "Cl": m_nacl,
+#     "OH": m_naoh,
+# }
 
-am = Pitzer(ph)
-print(am.get_lny_m("Mg"), 2.7182 ** am.get_lny_m("Mg"))
-print(am.get_A())
-print(am.get_harvie_j(1))
+# am = Pitzer(ph13)
+# y = am.get_y(ph13)
+# print(y)
+# # print(
+# #     ph['Na'] * ph['Cl'] * y['Na'] * y['Cl']
+# # )
+
+
+# def set_ph(m_nacl, m_naoh=0):
+#     ph = {
+#         "Na": m_nacl + m_naoh,
+#         "Cl": m_nacl,
+#         "OH": m_naoh,
+#     }
+#     return ph
+
+
+# def PR(ph, y):
+#     return ph['Na'] * ph['Cl'] * y['Na'] * y['Cl']
+
+
+# def f(x):
+#     ph = set_ph(x)
+#     y = am.get_y(ph)
+#     x = PR(ph, y)
+#     return x - 37.18
+
+
+# def opti(bounds=(0.1, 8),
+#          f_tol=1e-18):
+#     a = bounds[0]
+#     b = bounds[1]
+#     while(1):
+#         x = (a + b) / 2
+#         f_a = f(a)
+#         f_b = f(b)
+#         f_x = f(x)
+#         if f_x * f_a < 0:
+#             b = x
+#         elif f_x * f_b < 0:
+#             a = x
+#         print(x, a, b, f(x))
+#         if abs(b - a) < f_tol or abs(f(x)) < 1e-2:
+#             print(x)
+#             break
+
+
+# # opti()
