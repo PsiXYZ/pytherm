@@ -97,9 +97,9 @@ class Pitzer:
                 for c2 in self.cations:
                     if self.db.is_exist('cc', c1, c2):
                         m_c2 = ph[c2]
-                        fi = self.db['cc'][c1][c2] + \
-                            self.get_theta_e(c1, c2, I)
-                        value_cc += m_c1 * m_c2 * fi
+                        fi = self.db['cc'][c1][c2] \
+                            + self.get_theta_e(c1, c2, I)
+                        value_cc += m_c1 * m_c2 * 2 * fi
             return value_cc
 
         def get_aa():
@@ -109,9 +109,9 @@ class Pitzer:
                 for a2 in self.cations:
                     if self.db.is_exist('aa', a1, a2):
                         m_a2 = ph[a2]
-                        fi = self.db['aa'][a1][a2] + \
-                            self.get_theta_e(a1, a2, I)
-                        value_aa += m_a1 * m_a2 * fi
+                        fi = self.db['aa'][a1][a2]  \
+                            + self.get_theta_e(a1, a2, I)
+                        value_aa += m_a1 * m_a2 * 2 * fi
             return value_aa
 
         def get_cca():
@@ -124,7 +124,7 @@ class Pitzer:
                         if self.db.is_exist('cca', 'c1', 'c2', 'a'):
                             m_a = self.ph[a]
                             psi = self.db['cca'][c1][c2][a]
-                            value_cca += 0.5 * m_c1 * m_c2 * m_a * psi
+                            value_cca += m_c1 * m_c2 * m_a * psi
             return value_cca
 
         def get_caa():
@@ -137,20 +137,86 @@ class Pitzer:
                         if self.db.is_exist('caa', c, a1, a2):
                             m_c = ph[c]
                             psi = self.db['caa'][c][a1][a2]
-                            value_caa += 0.5 * m_a1 * m_a2 * m_c * psi
+                            value_caa += m_a1 * m_a2 * m_c * psi
             return value_caa
+
+        def get_nc():
+            value_nc = 0
+            for n in self.neutral:
+                m_n = ph[n]
+                for c in self.cations:
+                    m_c = ph[c]
+                    if self.db.is_exist('n', n, c):
+                        value_nc += 2 * m_n * m_c * self.db['nc'][n][c]
+            return value_nc
+
+        def get_na():
+            value_na = 0
+            for n in self.neutral:
+                m_n = ph[n]
+                for a in self.anions:
+                    m_a = ph[a]
+                    if self.db.is_exist('na', n, a):
+                        value_na += 2 * m_n * m_a * self.db['na'][n][a]
+            return value_na
+
+        def get_nca():
+            value_nca = 0
+            for n in self.cations:
+                m_n = ph[n]
+                for c in self.cations:
+                    m_c = ph[c]
+                    for a in self.anions:
+                        if self.db.is_exist('nca', a, n, c):
+                            m_a = ph[a]
+                            value_nca += (m_n * m_c * m_a
+                                          * self.db['nca'][n][c][a])
+            return value_nca
+
+        def get_nn():
+            value_nn = 0
+            for n1 in self.neutral:
+                m_n1 = ph[n1]
+                for n2 in self.neutral:
+                    m_n2 = ph[n2]
+                    if self.db.is_exist('nn', n1, n2):
+                        value_nn += m_n1 * m_n2 * self.db['nn'][n1][n2]
+            return value_nn
+
+        def get_nnn():
+            value_nnn = 0
+            for n1 in self.cations:
+                m_n1 = ph[n1]
+                for n2 in self.cations:
+                    m_n2 = ph[n2]
+                    for n3 in self.anions:
+                        if self.db.is_exist('nnn', n1, n2, n3):
+                            m_n3 = ph[n3]
+                            value_nnn += (m_n1 * m_n2 * m_n3
+                                          * self.db['nnn'][n1][n2][n3])
+            return value_nnn
 
         I = self.get_I(ph)
         A = self.get_A()
         Z = self.get_Z(ph)
+
         gibbs = self.get_f(I, A)
         gibbs += get_ca()
+
         if len(self.cations) > 1:
             gibbs += get_cc()
             gibbs += get_cca()
+
         if len(self.anions) > 1:
             gibbs += get_aa()
             gibbs += get_caa()
+
+        if len(self.neutral) >= 1:
+            gibbs += get_nc()
+            gibbs += get_na()
+            gibbs += get_nca()
+            gibbs += get_nn()
+            gibbs += get_nnn()
         return gibbs
 
     def get_harvie_j(self, x):
@@ -295,61 +361,3 @@ class Pitzer:
         for i in ph:
             s_m += ph[i]
         return 1 - dG_dw / (R * T * s_m)
-
-
-# m_nacl = 3.9
-# m_naoh = 4
-# ph13 = {
-#     "Na": m_nacl + m_naoh,
-#     "Cl": m_nacl,
-#     "OH": m_naoh,
-# }
-
-# am = Pitzer(ph13)
-# y = am.get_y(ph13)
-# print(y)
-# # print(
-# #     ph['Na'] * ph['Cl'] * y['Na'] * y['Cl']
-# # )
-
-
-# def set_ph(m_nacl, m_naoh=0):
-#     ph = {
-#         "Na": m_nacl + m_naoh,
-#         "Cl": m_nacl,
-#         "OH": m_naoh,
-#     }
-#     return ph
-
-
-# def PR(ph, y):
-#     return ph['Na'] * ph['Cl'] * y['Na'] * y['Cl']
-
-
-# def f(x):
-#     ph = set_ph(x)
-#     y = am.get_y(ph)
-#     x = PR(ph, y)
-#     return x - 37.18
-
-
-# def opti(bounds=(0.1, 8),
-#          f_tol=1e-18):
-#     a = bounds[0]
-#     b = bounds[1]
-#     while(1):
-#         x = (a + b) / 2
-#         f_a = f(a)
-#         f_b = f(b)
-#         f_x = f(x)
-#         if f_x * f_a < 0:
-#             b = x
-#         elif f_x * f_b < 0:
-#             a = x
-#         print(x, a, b, f(x))
-#         if abs(b - a) < f_tol or abs(f(x)) < 1e-2:
-#             print(x)
-#             break
-
-
-# # opti()
