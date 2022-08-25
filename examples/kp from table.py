@@ -1,5 +1,5 @@
 import pytherm.liquids as lq
-import pytherm.activity.unifac as uf
+import pytherm.activity.unifac_old as uf
 import csv
 
 inp_file = "unifac in2 t.csv"

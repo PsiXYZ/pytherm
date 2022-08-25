@@ -15,7 +15,7 @@ parameter sources:
     DOR, NIST2015: mod COMB and res (3 param)
 """
 from math import log, exp, e
-from .db import unifac as datasets
+from .db.unifac import io
 
 R = 8.314462
 
@@ -25,23 +25,21 @@ class Unifac:
     """
     get_comb = None
 
-    def __init__(self,
-                 dataset: datasets.ParametersUNIFAC,
-                 substances: datasets.SubstancesUNIFAC):
+    def __init__(self, inp: dict,
+                 unifac_mode: str = "VLE",
+                 substance_source: str = "general"):
+        self.unifac_mode = unifac_mode
+        self.substance_source = substance_source
+        self.phase = self.create_ph(inp)
+        self.t_groups = io.get_groups(unifac_mode)
 
-        self.unifac_mode = dataset['type']
-        self.interaction_matrix = dataset['res']
-        self.t_groups = dataset['comb']
-        self.phase = substances
-
-        if self.unifac_mode == 'modified':
+        if self.unifac_mode in ('DOR', 'NIST2015'):
             self.get_comb = self.get_comb_mod
-        elif self.unifac_mode == 'classic':
-            self.get_comb = self.get_comb_original
         else:
-            raise Warning("unknow unifac mode")
+            self.get_comb = self.get_comb_original
+        self.interaction_matrix = io.get_interactions(unifac_mode)
 
-        # self.__check_inter()
+        self.__check_inter()
 
     def get_y(self,
               inp: dict[str, float],
@@ -238,9 +236,8 @@ class Unifac:
                 s2 = 0
                 # сумма под первым логарифмом
                 for t in gr:
-                    m = self.t_groups[t].id
-                    k = self.t_groups[s].id
-                    a_mk = self.interaction_matrix[m][k]
+                    a_mk = self.interaction_matrix[self.t_groups[t].id -
+                                                   1][self.t_groups[s].id - 1]
                     s1 += tet[t] * exp(- (a_mk[0]
                                           + a_mk[1] * temperature
                                           + a_mk[2] * temperature ** 2)
@@ -248,7 +245,8 @@ class Unifac:
 
                 # сумма под вторым логарифмом
                 for t in gr:
-                    a_km = self.interaction_matrix[self.t_groups[s].id][self.t_groups[t].id]
+                    a_km = self.interaction_matrix[self.t_groups[s].id -
+                                                   1][self.t_groups[t].id - 1]
                     num = tet[t] * exp(
                         - (a_km[0]
                            + a_km[1] * temperature
@@ -257,7 +255,7 @@ class Unifac:
                     den = 0
                     # расчет знаменателя
                     for u in gr:
-                        a_nm = self.interaction_matrix[self.t_groups[u].id][self.t_groups[t].id]
+                        a_nm = self.interaction_matrix[self.t_groups[u].id - 1][self.t_groups[t].id - 1]
                         den += tet[u] * exp(- (a_nm[0]
                                                + a_nm[1] * temperature
                                                + a_nm[2] * temperature ** 2)
@@ -283,6 +281,10 @@ class Unifac:
 
         return rez
 
+    def create_ph(self, inp):
+        ph = io.create_phase(inp, self.unifac_mode, self.substance_source)
+        return ph
+
     def get_ge(self, inp, t=298, n=1):
         y = self.get_y(inp, temperature=t)
         ge = 0
@@ -291,7 +293,7 @@ class Unifac:
         return R*t*ge
 
     def get_t2(self, i, j):
-        print(self.interaction_matrix[i][j])
+        print(self.interaction_matrix[i - 1][j - 1])
 
     def get_t1(self, name):
         print(self.t_groups[name].id,
@@ -305,7 +307,7 @@ class Unifac:
         g = self.phase[name].groups
         for i in g:
             s += f"{g[i]}*{i} "
-        return (s[:-1])
+        return(s[:-1])
 
     def __check_inter(self):
         gr = []

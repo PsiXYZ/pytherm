@@ -1,5 +1,5 @@
 import pytherm.liquids as lq
-import pytherm.activity.unifac as uf
+import pytherm.activity.unifac_old as uf
 
 comp = ['hexane', 'acetonitrile']
 target = "toluene"

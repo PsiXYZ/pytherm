@@ -91,7 +91,7 @@ def get_tsubs(unifac_mode: str, substance_source: str) -> dict:
             ('general' for sub from db, 'unifac' for for sub from mode\db)
 
     Returns:
-        dict: {substance name: [Gropu, count]}
+        dict: {substance name: [Group, count]}
     """
     data = {}
     if substance_source == "general":

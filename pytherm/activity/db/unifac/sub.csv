@@ -107,3 +107,5 @@ C12H5Cl5: 5*ACCl 5*ACH 2*AC
 C12H4Cl6: 6*ACCl 4*ACH 2*AC
 C2Cl6: 2*CCl3
 Benzo(a)pyrene: 12*ACH 8*AC
+---------------------------------: 1*CH3
+DMDS: 1*-S-S- 2*CH3

@@ -1,4 +1,4 @@
-import pytherm.activity.unifac as uf
+import pytherm.activity.unifac_old as uf
 from math import e, cos, sin, pi
 import numpy as np
 
