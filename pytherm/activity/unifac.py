@@ -15,9 +15,11 @@ parameter sources:
     DOR, NIST2015: mod COMB and res (3 param)
 """
 from math import log, exp, e
+
+from pytherm import constants
 from .db import unifac as datasets
 
-R = 8.314462
+R = constants.R
 
 
 class Unifac:
@@ -41,7 +43,7 @@ class Unifac:
         else:
             raise Warning("unknow unifac mode")
 
-        # self.__check_inter()
+        self.__check_inter()
 
     def get_y(self,
               inp: dict[str, float],
@@ -248,7 +250,9 @@ class Unifac:
 
                 # сумма под вторым логарифмом
                 for t in gr:
-                    a_km = self.interaction_matrix[self.t_groups[s].id][self.t_groups[t].id]
+                    k = self.t_groups[s].id
+                    m = self.t_groups[t].id
+                    a_km = self.interaction_matrix[k][m]
                     num = tet[t] * exp(
                         - (a_km[0]
                            + a_km[1] * temperature
@@ -257,7 +261,9 @@ class Unifac:
                     den = 0
                     # расчет знаменателя
                     for u in gr:
-                        a_nm = self.interaction_matrix[self.t_groups[u].id][self.t_groups[t].id]
+                        n = self.t_groups[u].id
+                        m = self.t_groups[t].id
+                        a_nm = self.interaction_matrix[n][m]
                         den += tet[u] * exp(- (a_nm[0]
                                                + a_nm[1] * temperature
                                                + a_nm[2] * temperature ** 2)
@@ -271,7 +277,10 @@ class Unifac:
         # расчет Г в растворе содержащем только один тип молекул Гik
         for i in inp:
             buf = {}
-            # создание фазы из одного компонента, концентрации можно не менять тк все нормируется
+            '''
+            создание фазы из одного компонента,
+            концентрации можно не менять тк все нормируется
+            '''
             buf[i] = inp[i]
             gp[i] = get_g(buf)
 
@@ -308,23 +317,25 @@ class Unifac:
         return (s[:-1])
 
     def __check_inter(self):
-        gr = []
-        s = self.phase
+        groups = []
+        ph = self.phase
         # создается список с именами всех групп в данной фазе
-        for i in s:
-            for j in s[i].groups:
-                if j not in gr:
-                    gr.append(j)
+        for i in ph:
+            for j in ph[i].groups:
+                if j not in groups:
+                    groups.append(j)
 
-        for s in gr:
-            for t in gr:
-                a_mk = self.interaction_matrix[self.t_groups[t].id -
-                                               1][self.t_groups[s].id - 1]
-                if a_mk == "-":
-                    raise Warning(
-                        f"NO INTERACTION PARAMETERS FOR: {s} - {t} "
-                        f"({self.t_groups[s].id} - {self.t_groups[t].id})"
-                    )
+        for gr1 in groups:
+            if self.t_groups[gr1].id not in self.interaction_matrix:
+                self.__parameters_alert(gr1)
+            for gr2 in groups:
+                if self.t_groups[gr2].id not in self.interaction_matrix[self.t_groups[gr1].id]:
+                    self.__parameters_alert(gr1, gr2)
+
+    def __parameters_alert(self, *p):
+        raise Warning(
+            f"NO INTERACTION PARAMETERS FOR: {p}"
+        )
 
     def change_t2(self, i, j, vals):
         self.interaction_matrix[i - 1][j - 1] = vals

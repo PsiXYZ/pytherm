@@ -1,7 +1,8 @@
 from math import log, log10
 from .solver import minimize
+import constants
 
-R = 8.314
+R = constants.R
 
 
 def get_yinf(activity_model,
