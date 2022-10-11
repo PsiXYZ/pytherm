@@ -1,6 +1,3 @@
-
-
-from posixpath import split
 from pytherm.activity.db.unifac import defsubs
 
 
@@ -98,7 +95,6 @@ class SubstancesUNIFAC(dict):
                 # int -> float
                 a.append([j.split("*")[1], float(j.split("*")[0])])
             data[i] = a
-
         return data
 
     def get_from_defsubs(self, subs):
@@ -107,6 +103,12 @@ class SubstancesUNIFAC(dict):
             b[s] = defsubs.subs[s]
         self.create_phase(b)
 
+    def get_from_dict(self, subs):
+        b = {}
+        for s in subs:
+            b[s] = subs[s]
+        self.create_phase(b)
+           
     def get_from_csv(self,
                      subs,
                      path=r"D:\код\pytherm use\pytherm\pytherm\activity\db\unifac\sub.csv",
