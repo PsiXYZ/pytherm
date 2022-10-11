@@ -292,12 +292,12 @@ class Unifac:
 
         return rez
 
-    def get_ge(self, inp, t=298, n=1):
-        y = self.get_y(inp, temperature=t)
+    def get_ge(self, inp, T=298, n=1):
+        y = self.get_y(inp, temperature=T)
         ge = 0
         for sub in inp:
             ge += n*inp[sub]*log(y[sub])
-        return R*t*ge
+        return R * T * ge
 
     def get_t2(self, i, j):
         print(self.interaction_matrix[i][j])
