@@ -18,11 +18,12 @@ from math import log, exp, e
 
 from pytherm import constants
 from .db import unifac as datasets
+from activity_model import activity_model
 
 R = constants.R
 
 
-class Unifac:
+class Unifac(activity_model):
     """Unifac model for activity coeffcient calculation
     """
     get_comb = None
@@ -299,6 +300,13 @@ class Unifac:
             ge += n*inp[sub]*log(y[sub])
         return R * T * ge
 
+    def get_ge_RT(self, inp, T=298, n=1):
+        y = self.get_y(inp, temperature=T)
+        ge = 0
+        for sub in inp:
+            ge += n*inp[sub]*log(y[sub])
+        return ge
+    
     def get_t2(self, i, j):
         print(self.interaction_matrix[i][j])
 
