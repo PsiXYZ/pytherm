@@ -6,4 +6,5 @@ from .parameters import (
     LLE,
     NIST2015,
     VLE,
+    PSRK,
 )
