@@ -1,5 +1,4 @@
 from math import log, sqrt
-import re
 from pytherm import constants
 from pytherm.activity.activity_model import Activity_model
 
@@ -24,7 +23,7 @@ class PSRK:
 
         b = self.get_b(system, bi)
         a = self.get_a(system, T, b, ai, bi, ge)
-        return (R * T) / (v - b) - a / v / (v + b)
+        return (R * T) / (v - b) - a / (v * (v + b))
 
     def get_alphas(self, T: float) -> float:
         # sqrt_T = sqrt(T)
@@ -82,3 +81,17 @@ class PSRK:
             return 0
         else:
             return self.activity_model.get_ge(system, T)
+
+    def get_cubic_coef(self, system, T, p):
+        alphas = self.get_alphas(T)
+        ai = self.get_ai(alphas)
+        bi = self.get_bi()
+        ge = self.get_ge(system, T)
+
+        b = self.get_b(system, bi)
+        a = self.get_a(system, T, b, ai, bi, ge)
+
+        return (1,
+                - R * T / p,
+                a / p - b * R * T / p - b ** 2,
+                - a * b / p)
