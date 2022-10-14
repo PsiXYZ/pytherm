@@ -113,7 +113,8 @@ class PSRK:
         # s = 0
         # for i in system:
         #     s += system[i] * log(yi[i])
-        # ge = R * T * s
+        ge_RT = self.activity_model.get_ge_RT(system, T)
+        al = self.get_al(system, ge_RT, b, bi, alp)
 
         # a = self.get_a(system, T, b, ai, bi, ge)
         # roots = self.get_roots(system=system, P=P, T=T)
@@ -122,9 +123,11 @@ class PSRK:
         def f(v):
             lnf = {}
             for i in system:
-                lnf[i] = bi[i] / b * ((P * v) / (R * T) - 1)
-                - log(P * (v - b) / (R * T))
-                - der_ai[i] * log((v + b) / v)
+                # lnf[i] = bi[i] / b * ((P * v) / (R * T) - 1)
+                # - log(P * (v - b) / (R * T))
+                # - der_ai[i] * log((v + b) / v)
+                lnf[i] = log(R * T / (P * (v - b))) + (1 / (v - b) - al/(v + b)) * bi[i] - der_ai[i] * log((v + b) / v)
+       
             fi = {}
             for i in lnf:
                 fi[i] = exp(lnf[i])
@@ -137,3 +140,11 @@ class PSRK:
             der_ai[i] = 1 / A * (log(y[i]) + log(b / bi[i]) +
                                  bi[i] / b - 1) + alp[i]
         return der_ai
+
+    def get_al(self, system, ge_RT, b, bi, alp, A=-0.64663):
+        s1 = 0
+        s2 = 0
+        for i in bi:
+            s1 += system[i] * log(b / bi[i])
+            s2 += system[i] * alp[i]
+        return 1 / A * (ge_RT + s1) + s2
