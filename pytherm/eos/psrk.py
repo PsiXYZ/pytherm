@@ -2,12 +2,11 @@ from math import exp, log, sqrt
 from pytherm import constants
 from pytherm.activity.activity_model import Activity_model
 import numpy as np
-
+from .eos import EOS
 R = constants.R
 
 
-class PSRK:
-
+class PSRK(EOS):
     def __init__(self,
                  system: dict,
                  ms_params: dict,
@@ -96,7 +95,15 @@ class PSRK:
 
     def get_roots(self, system, P, T):
         cs = self.get_cubic_coef(system=system, T=T, p=P)
-        return (min(np.roots(cs)), max(np.roots(cs)))
+        r = np.roots(cs)
+        out = []
+        for i in r:
+            if i.imag == 0:
+                out.append(i)
+        if len(out) == 1:
+            return [float(out[0])]
+        else:
+            return [float(min(r)), float(max(r))]
 
     def get_f(self, system, P, V, T):
         alphas = self.get_alphas(T)
@@ -148,3 +155,6 @@ class PSRK:
             s1 += system[i] * log(b / bi[i])
             s2 += system[i] * alp[i]
         return 1 / A * (ge_RT + s1) + s2
+
+    def get_system(self):
+        return self.system
