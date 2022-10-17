@@ -7,25 +7,49 @@ R = constants.R
 
 
 class PSRK(EOS):
+    """Class for solving the Predictive Soave-Redlich-Kwong equation"""
+
     def __init__(self,
-                 system: dict,
-                 ms_params: dict,
-                 activity_model: Activity_model) -> None:
+                 system: dict[str, float],
+                 ms_params,
+                 activity_model: Activity_model,
+                 omegas=None,
+                 cr_params=None) -> None:
+        """PSRK class constructor
+
+        Parameters
+        ----------
+        system : dict[str, float]
+            Dictionary with component concentraions
+        ms_params : dict
+            Dictionary with Mathias-Copeman parameters
+        activity_model : Activity_model
+            Model for activity coefficient calculation,
+            UNIFAC in original model
+        omegas : dict
+            Acentric factors
+        cr_params : dict
+            Critical parameters
+        """
         self.ms_params = ms_params
         self.system = system
         self.activity_model = activity_model
+        self.cr_params = cr_params
+        self.omegas = omegas
+
+        self.bi = self.get_bi()
 
     def get_p(self, system, T, v):
         alphas = self.get_alphas(T)
         ai = self.get_ai(alphas)
-        bi = self.get_bi()
+        bi = self.bi
         ge = self.get_ge(system, T)
 
         b = self.get_b(system, bi)
         a = self.get_a(system, T, b, ai, bi, ge)
         return (R * T) / (v - b) - a / (v * (v + b))
 
-    def get_alphas(self, T: float) -> float:
+    def get_alphas(self, T: float) -> dict:
         # sqrt_T = sqrt(T)
         alphas = {}
         for i in self.system:
@@ -117,24 +141,17 @@ class PSRK(EOS):
         b = self.get_b(system, bi)
 
         yi = self.activity_model.get_y(system, T)
-        # s = 0
-        # for i in system:
-        #     s += system[i] * log(yi[i])
         ge_RT = self.activity_model.get_ge_RT(system, T)
         al = self.get_al(system, ge_RT, b, bi, alp)
 
-        # a = self.get_a(system, T, b, ai, bi, ge)
-        # roots = self.get_roots(system=system, P=P, T=T)
         der_ai = self.get_der_ai(yi, b, bi, alp)
 
         def f(v):
             lnf = {}
             for i in system:
-                # lnf[i] = bi[i] / b * ((P * v) / (R * T) - 1)
-                # - log(P * (v - b) / (R * T))
-                # - der_ai[i] * log((v + b) / v)
-                lnf[i] = log(R * T / (P * (v - b))) + (1 / (v - b) - al/(v + b)) * bi[i] - der_ai[i] * log((v + b) / v)
-       
+                lnf[i] = (log(R * T / (P * (v - b)))
+                          + (1 / (v - b) - al/(v + b)) * bi[i]
+                          - der_ai[i] * log((v + b) / v))
             fi = {}
             for i in lnf:
                 fi[i] = exp(lnf[i])

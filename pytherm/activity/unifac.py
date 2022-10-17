@@ -47,8 +47,8 @@ class Unifac(Activity_model):
         self.__check_inter()
 
     def get_y(self,
-              inp: dict[str, float],
-              temperature=298) -> dict[str, float]:
+              system: dict[str, float],
+              T=298) -> dict[str, float]:
         """Calculate activity coefficient for input dict
 
         Args:
@@ -58,13 +58,13 @@ class Unifac(Activity_model):
         Returns:
             dict[str, float]: activity coefficient for inp substances
         """
-        for i in inp:
-            self.phase[i].x = inp[i]
+        for i in system:
+            self.phase[i].x = system[i]
 
         comb = self.get_comb(self.phase)
-        res = self.get_res(self.phase, temperature)
+        res = self.get_res(self.phase, T)
         y = {}
-        for i in inp:
+        for i in system:
             # print(i, e ** comb[i], e ** res[i])
             lny = comb[i] + res[i]
             y[i] = e ** lny
@@ -294,14 +294,14 @@ class Unifac(Activity_model):
         return rez
 
     def get_ge(self, inp, T=298, n=1):
-        y = self.get_y(inp, temperature=T)
+        y = self.get_y(inp, T=T)
         ge = 0
         for sub in inp:
             ge += n*inp[sub]*log(y[sub])
         return R * T * ge
 
     def get_ge_RT(self, inp, T=298, n=1):
-        y = self.get_y(inp, temperature=T)
+        y = self.get_y(inp, T=T)
         ge = 0
         for sub in inp:
             ge += n*inp[sub]*log(y[sub])
