@@ -11,16 +11,18 @@ class PSRK(EOS):
 
     def __init__(self,
                  system: dict[str, float],
+                 cr_params,
                  ms_params,
                  activity_model: Activity_model,
-                 omegas=None,
-                 cr_params=None) -> None:
+                 omegas=None) -> None:
         """PSRK class constructor
 
         Parameters
         ----------
         system : dict[str, float]
             Dictionary with component concentraions
+        cr_params : dict
+            Critical parameters
         ms_params : dict
             Dictionary with Mathias-Copeman parameters
         activity_model : Activity_model
@@ -28,8 +30,6 @@ class PSRK(EOS):
             UNIFAC in original model
         omegas : dict
             Acentric factors
-        cr_params : dict
-            Critical parameters
         """
         self.ms_params = ms_params
         self.system = system
@@ -39,21 +39,47 @@ class PSRK(EOS):
 
         self.bi = self.get_bi()
 
-    def get_p(self, system, T, v):
+    def get_p(self, system: dict[str, float], T: float, V: float) -> float:
+        """Calcluclate p using PSRK equation
+
+        Parameters
+        ----------
+        system : dict[str, float]
+            Dictionary with component concentraions
+        T : float
+            Temperature, [K]
+        v : float
+            Molar volume, [m^3/mol]
+
+        Returns
+        -------
+        float
+            Pressure, [Pa]
+        """
         alphas = self.get_alphas(T)
         ai = self.get_ai(alphas)
-        bi = self.bi
         ge = self.get_ge(system, T)
 
-        b = self.get_b(system, bi)
-        a = self.get_a(system, T, b, ai, bi, ge)
-        return (R * T) / (v - b) - a / (v * (v + b))
+        b = self.get_b(system)
+        a = self.get_a(system, T, b, ai, ge)
+        return (R * T) / (V - b) - a / (V * (V + b))
 
-    def get_alphas(self, T: float) -> dict:
-        # sqrt_T = sqrt(T)
+    def get_alphas(self, T: float) -> dict[str, float]:
+        """Calculate alpha coefficients using Mathias-Copeman equation
+
+        Parameters
+        ----------
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        dict[str, float]
+            alpha coefficients
+        """
         alphas = {}
         for i in self.system:
-            Tr = T / self.ms_params[i]['Tc']
+            Tr = T / self.cr_params[i]['Tc']
             sqrt_T = sqrt(Tr)
             if Tr < 1:
                 c1 = self.ms_params[i]['c1']
@@ -69,23 +95,71 @@ class PSRK(EOS):
                              + c1 * (1 - sqrt_T)) ** 2
         return alphas
 
-    def get_ai(self, alphas):
+    def get_ai(self, alphas: dict[str, float]) -> dict[str, float]:
+        """Calculate a_i coefficient for each component in system
+
+        Parameters
+        ----------
+        alphas : dict[str, float]
+            Mathias-Copeman alpha coefficients
+
+        Returns
+        -------
+        dict[str, float]
+            a_i coefficient for each component in system
+        """
         ai = {}
         for i in self.system:
-            Tc = self.ms_params[i]['Tc']
-            Pc = self.ms_params[i]['Pc']
+            Tc = self.cr_params[i]['Tc']
+            Pc = self.cr_params[i]['Pc']
             ai[i] = 0.42748 * R ** 2 * Tc ** 2 * alphas[i] / Pc
         return ai
 
-    def get_bi(self):
+    def get_bi(self) -> dict[str, float]:
+        """Calculate b_i coefficient for each component in system.
+        Calculated only once during the initialization of the object.
+
+        Returns
+        -------
+        dict[str, float]
+            b_i coefficient for each component in system
+        """
         bi = {}
         for i in self.system:
-            Tc = self.ms_params[i]['Tc']
-            Pc = self.ms_params[i]['Pc']
+            Tc = self.cr_params[i]['Tc']
+            Pc = self.cr_params[i]['Pc']
             bi[i] = 0.08664 * R * Tc / Pc
         return bi
 
-    def get_a(self, system, T, b, ai, bi, ge, A=-0.64663):
+    def get_a(self, system: dict[str, float],
+              T: float,
+              b: float,
+              ai: dict[str, float],
+              ge: float,
+              A=-0.64663) -> float:
+        """Calculate a parameter for SRK using modified Huron-Vidal mixing rule
+
+        Parameters
+        ----------
+        system : dict[str, float]
+            Dictionary with component concentraions
+        T : float
+            Temperature, [K]
+        b : float
+            b parameter for SRK
+        ai : dict[str, float]
+            a_i parameters dictionary for SRK
+        ge : float
+            Excess Gibbs free energy
+        A : float, optional
+            MHV constant, by default -0.64663
+
+        Returns
+        -------
+        float
+            a parameter for SRK
+        """
+        bi = self.bi
         s1 = 0
         s2 = 0
         for i in self.system:
@@ -94,31 +168,89 @@ class PSRK(EOS):
 
         return b * (ge / A + s1 + R * T / A * s2)
 
-    def get_b(self, system, bi):
+    def get_b(self, system: dict[str, float]) -> float:
+        """Calculate b parameter for SQR equation using linear mixnig rule
+
+        Parameters
+        ----------
+        system : dict[str, float]
+            Dictionary with component concentraions
+
+        Returns
+        -------
+        float
+            b parameter for SQR equation
+        """
+        bi = self.bi
         b = 0
         for i in self.system:
             b += system[i] * bi[i]
         return b
 
-    def get_ge(self, system, T):
+    def get_ge(self, system: dict[str, float], T: float) -> float:
+        """_summary_
+
+        Parameters
+        ----------
+        system : dict[str, float]
+            Dictionary with component concentraions
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        float
+            Excess Gibbs free energy
+        """
         return self.activity_model.get_ge(system, T)
 
-    def get_cubic_coef(self, system, T, p):
+    def get_cubic_coef(self, system: dict[str, float], T: float, P: float) -> tuple:
+        """Return coefficient in cubic form of SQR V^3 + a1 * V^2 + a2*V + a3 =0
+
+        Parameters
+        ----------
+        system : dict[str, float]
+            Dictionary with component concentraions
+        T : float
+            Temperature, [K]
+        P : float
+            Pressure, [Pa]
+
+        Returns
+        -------
+        tuple
+            (a1, a2, a3)
+        """
         alphas = self.get_alphas(T)
         ai = self.get_ai(alphas)
-        bi = self.get_bi()
         ge = self.get_ge(system, T)
 
-        b = self.get_b(system, bi)
-        a = self.get_a(system, T, b, ai, bi, ge)
+        b = self.get_b(system)
+        a = self.get_a(system, T, b, ai, ge)
 
         return (1,
-                - R * T / p,
-                a / p - b * R * T / p - b ** 2,
-                - a * b / p)
+                - R * T / P,
+                a / P - b * R * T / P - b ** 2,
+                - a * b / P)
 
-    def get_roots(self, system, P, T):
-        cs = self.get_cubic_coef(system=system, T=T, p=P)
+    def get_roots(self, system: dict[str, float], P: float, T: float) -> tuple:
+        """Solving PSRK equation for P and T
+
+        Parameters
+        ----------
+        system : dict[str, float]
+            Dictionary with component concentraions
+        P : float
+            Pressure, [Pa]
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        tuple
+            One or two roots
+        """
+        cs = self.get_cubic_coef(system=system, T=T, P=P)
         r = np.roots(cs)
         out = []
         for i in r:
@@ -129,7 +261,29 @@ class PSRK(EOS):
         else:
             return [float(min(r)), float(max(r))]
 
-    def get_f(self, system, P, V, T):
+    def get_f(self,
+              system: dict[str, float],
+              P: float,
+              V: float,
+              T: float) -> dict[str, float]:
+        """Calculate fugacity coefficients for given P, V, T
+
+        Parameters
+        ----------
+        system : dict[str, float]
+            Dictionary with component concentraions
+        P : float
+            Pressure, [Pa]
+        V : float
+            Molar volume, [m^3/mol]
+        T : float
+            Temperature, [K]
+
+        Returns
+        -------
+        dict[str, float]
+            Dictionary with fugacity coefficients for all components
+        """
         alphas = self.get_alphas(T)
         ai = self.get_ai(alphas)
         bi = self.get_bi()
@@ -138,13 +292,13 @@ class PSRK(EOS):
         for i in system:
             alp[i] = ai[i] / (bi[i] * R * T)
 
-        b = self.get_b(system, bi)
+        b = self.get_b(system)
 
         yi = self.activity_model.get_y(system, T)
         ge_RT = self.activity_model.get_ge_RT(system, T)
-        al = self.get_al(system, ge_RT, b, bi, alp)
+        al = self.__get_al(system, ge_RT, b, bi, alp)
 
-        der_ai = self.get_der_ai(yi, b, bi, alp)
+        der_ai = self.__get_der_ai(yi, b, bi, alp)
 
         def f(v):
             lnf = {}
@@ -158,14 +312,14 @@ class PSRK(EOS):
             return fi
         return f(V)
 
-    def get_der_ai(self, y, b, bi, alp, A=-0.64663):
+    def __get_der_ai(self, y, b, bi, alp, A=-0.64663):
         der_ai = {}
         for i in y:
             der_ai[i] = 1 / A * (log(y[i]) + log(b / bi[i]) +
                                  bi[i] / b - 1) + alp[i]
         return der_ai
 
-    def get_al(self, system, ge_RT, b, bi, alp, A=-0.64663):
+    def __get_al(self, system, ge_RT, b, bi, alp, A=-0.64663):
         s1 = 0
         s2 = 0
         for i in bi:

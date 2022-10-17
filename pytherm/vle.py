@@ -38,11 +38,10 @@ def fit_Pxy(model: eos.EOS, T: float, points=50):
 
 def is_unstable(system, model: eos.EOS, T: float, P=1E5, points=1000):
     p = []
-    bi = model.get_bi()
-    b = model.get_b(system, bi)
+    b = model.get_b(system)
     vi = np.linspace(b * 1.4, 1600 / 1000000, num=points)
     for i in vi:
-        p.append(model.get_p(system=system, T=T, v=i))
+        p.append(model.get_p(system=system, T=T, V=i))
     p = np.array(p)
     grad_p = np.gradient(p)
     # i_max = grad_p.argmax()
