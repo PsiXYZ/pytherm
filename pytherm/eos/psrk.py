@@ -20,7 +20,7 @@ class PSRK(EOS):
         Parameters
         ----------
         system : dict[str, float]
-            Dictionary with component concentraions
+            Dictionary with component concentrations
         cr_params : dict
             Critical parameters
         ms_params : dict
@@ -40,15 +40,15 @@ class PSRK(EOS):
         self.bi = self.get_bi()
 
     def get_p(self, system: dict[str, float], T: float, V: float) -> float:
-        """Calcluclate p using PSRK equation
+        """Calculate p using PSRK equation
 
         Parameters
         ----------
         system : dict[str, float]
-            Dictionary with component concentraions
+            Dictionary with component concentrations
         T : float
             Temperature, [K]
-        v : float
+        V : float
             Molar volume, [m^3/mol]
 
         Returns
@@ -142,7 +142,7 @@ class PSRK(EOS):
         Parameters
         ----------
         system : dict[str, float]
-            Dictionary with component concentraions
+            Dictionary with component concentrations
         T : float
             Temperature, [K]
         b : float
@@ -169,12 +169,12 @@ class PSRK(EOS):
         return b * (ge / A + s1 + R * T / A * s2)
 
     def get_b(self, system: dict[str, float]) -> float:
-        """Calculate b parameter for SQR equation using linear mixnig rule
+        """Calculate b parameter for SQR equation using linear mixing rule
 
         Parameters
         ----------
         system : dict[str, float]
-            Dictionary with component concentraions
+            Dictionary with component concentrations
 
         Returns
         -------
@@ -193,7 +193,7 @@ class PSRK(EOS):
         Parameters
         ----------
         system : dict[str, float]
-            Dictionary with component concentraions
+            Dictionary with component concentrations
         T : float
             Temperature, [K]
 
@@ -210,7 +210,7 @@ class PSRK(EOS):
         Parameters
         ----------
         system : dict[str, float]
-            Dictionary with component concentraions
+            Dictionary with component concentrations
         T : float
             Temperature, [K]
         P : float
@@ -239,7 +239,7 @@ class PSRK(EOS):
         Parameters
         ----------
         system : dict[str, float]
-            Dictionary with component concentraions
+            Dictionary with component concentrations
         P : float
             Pressure, [Pa]
         T : float
@@ -271,7 +271,7 @@ class PSRK(EOS):
         Parameters
         ----------
         system : dict[str, float]
-            Dictionary with component concentraions
+            Dictionary with component concentrations
         P : float
             Pressure, [Pa]
         V : float
