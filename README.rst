@@ -31,7 +31,7 @@ Current features
 
 Getting Started
 ---------------
-Exmple of activity coefficient calculations using UNIFAC:
+Example of activity coefficient calculations using UNIFAC:
 
 .. code-block:: python
 
@@ -62,8 +62,9 @@ Future features:
   * UNIQUAC 
   * NRTL 
   * eNRTL 
-  * LIFAC 
+  * LIFAC
+  * LIQUAC
 
 * Calculations:
 
-  * Multicomponent eqilibrium calcaulations using PITZER 
+  * Multicomponent equilibrium calculations using PITZER
