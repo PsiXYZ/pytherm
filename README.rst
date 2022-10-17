@@ -12,7 +12,7 @@ Library include ready to use functions for VLE and LLE modeling.
 Modeling can be provided by different built-in EOS and activity models with 
 user-friendly interfaces.
 
-Current features:
+Current features
 -----------------
 * Activity models:
  
@@ -49,7 +49,7 @@ Exmple of activity coefficient calculations using UNIFAC:
     substances.get_from_dict(subs)
 
     am = uf.Unifac(dataset=uf.datasets.DOR, substances=substances)
-    print(am.get_y(inp=system, temperature=298))
+    print(am.get_y(system=system, T=298))
 
 Some more examples of use can be found in /examples
 
