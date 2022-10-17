@@ -16,22 +16,22 @@ Current features:
 -----------------
 * Activity models:
  
-  1. UNIFAC and Modified UNIFAC 
-  2. PITZER 
+  * UNIFAC and Modified UNIFAC 
+  * PITZER 
 
 * EOS models:
 
-  1. PSRK 
+  * PSRK 
 
 * Calculations:
 
-  1. Solubility in 2 and 3 component systems 
-  2. LLE for non-electrolyte systems 
-  3. VLE using EOS 
+  * Solubility in 2 and 3 component systems 
+  * LLE for non-electrolyte systems 
+  * VLE using EOS 
 
 Getting Started
 ---------------
-UNIFAC
+Exmple of activity coefficient calculations using UNIFAC:
 
 .. code-block:: python
 
@@ -59,11 +59,11 @@ Future features:
 
 * Activity models:
 
-  1. UNIQUAC 
-  2. NRTL 
-  3. eNRTL 
-  4. LIFAC 
+  * UNIQUAC 
+  * NRTL 
+  * eNRTL 
+  * LIFAC 
 
 * Calculations:
 
-  1. Multicomponent eqilibrium calcaulations using PITZER 
+  * Multicomponent eqilibrium calcaulations using PITZER 
