@@ -1,6 +1,6 @@
 from math import exp, log, sqrt
 from pytherm import constants
-from pytherm.activity.activity_model import Activity_model
+from pytherm.activity.activity_model import ActivityModel
 import numpy as np
 from .eos import EOS
 R = constants.R
@@ -13,7 +13,7 @@ class PSRK(EOS):
                  system: dict[str, float],
                  cr_params,
                  ms_params,
-                 activity_model: Activity_model,
+                 activity_model: ActivityModel,
                  omegas=None) -> None:
         """PSRK class constructor
 
