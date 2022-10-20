@@ -15,23 +15,37 @@ parameter sources:
     DOR, NIST2015: mod COMB and res (3 param)
 """
 from math import log, exp, e
-
+from typing import Callable
 from pytherm import constants
 from .db import unifac as datasets
-from .activity_model import Activity_model
+from .db.unifac import ParametersUNIFAC, SubstancesUNIFAC
+from .activity_model import ActivityModel
 
 R = constants.R
 
 
-class Unifac(Activity_model):
-    """Unifac model for activity coeffcient calculation
+class Unifac(ActivityModel):
+    """Unifac model for activity coefficients calculation
     """
-    get_comb = None
+    get_comb: Callable
 
     def __init__(self,
-                 dataset: datasets.ParametersUNIFAC,
-                 substances: datasets.SubstancesUNIFAC):
+                 dataset: ParametersUNIFAC,
+                 substances: SubstancesUNIFAC):
+        """Unifac constructor
 
+        Parameters
+        ----------
+        dataset : ParametersUNIFAC
+            ParametersUNIFAC object with interaction parameters
+        substances : SubstancesUNIFAC
+            Substances UNIFAC object with substance's group representation
+
+        Raises
+        ------
+        Warning
+            Raises if unifac_mode is unknown (not classic or modified)
+        """
         self.unifac_mode = dataset['type']
         self.interaction_matrix = dataset['res']
         self.t_groups = dataset['comb']
@@ -49,14 +63,19 @@ class Unifac(Activity_model):
     def get_y(self,
               system: dict[str, float],
               T=298) -> dict[str, float]:
-        """Calculate activity coefficient for input dict
+        """Calculate activity coefficietns for system dict
 
-        Args:
-            inp (dict[str, float]): input dictionary {name: conentration}
-            temperature (optional): Temperature in K. Defaults to 298.
+        Parameters
+        ----------
+        system : dict[str, float]
+            Input dictionary {"Substance name": concentration}
+        T : int, optional
+            Temperature, [K], by default 298
 
-        Returns:
-            dict[str, float]: activity coefficient for inp substances
+        Returns
+        -------
+        dict[str, float]
+            Activity coefficients
         """
         for i in system:
             self.phase[i].x = system[i]
@@ -70,15 +89,20 @@ class Unifac(Activity_model):
             y[i] = e ** lny
         return y
 
-    def get_comb_original(self, inp: dict[str, float], z=10) -> dict:
-        """Calculate combinatorial component using original equation
+    def get_comb_original(self, inp: SubstancesUNIFAC, z=10) -> dict[str, float]:
+        """Calculate combinatorial component (lny_c) using original equation
 
-        Args:
-            inp (dict[str, float]): input dictionary {name: conentration}
-            z (optional): Coordination number. Defaults to 10.
+        Parameters
+        ----------
+        inp : SubstancesUNIFAC
+            SubstancesUNIFAC object with defined concentrations 
+        z : int, optional
+            Coordination number, by default 10
 
-        Returns:
-            dict: combinatorial component
+        Returns
+        -------
+        dict[str, float]
+            Returns lny_c {"Substance name": lny_c}
         """
         def get_r(name):
             r = 0
@@ -127,15 +151,20 @@ class Unifac(Activity_model):
             rez[i] = lny
         return rez
 
-    def get_comb_mod(self, inp, z=10) -> dict:
-        """Calculate combinatorial component using modified equation
+    def get_comb_mod(self, inp: SubstancesUNIFAC, z=10) -> dict[str, float]:
+        """Calculate combinatorial component (lny_c) using modified equation
 
-        Args:
-            inp (dict[str, float]): input dictionary {name: conentration}
-            z (optional): Coordination number. Defaults to 10.
+        Parameters
+        ----------
+        inp : SubstancesUNIFAC
+            SubstancesUNIFAC object with defined concentrations
+        z : int, optional
+            Coordination number, by default 10
 
-        Returns:
-            dict: combinatorial component
+        Returns
+        -------
+        dict[str, float]
+            Returns lny_c {"Substance name": lny_c}
         """
         def get_r(name):
             r = 0
@@ -186,15 +215,20 @@ class Unifac(Activity_model):
             rez[i] = lny
         return rez
 
-    def get_res(self, inp, temperature) -> dict:
-        """Calculate combinatorial component using original equation
+    def get_res(self, inp, T: float) -> dict[str, float]:
+        """Calculate residual component using original equation
 
-        Args:
-            inp (dict[str, float]): input dictionary {name: conentration}
-            temperature (float): Temperature in K.
+        Parameters
+        ----------
+        inp : SubstancesUNIFAC
+            SubstancesUNIFAC object with defined concentrations
+        T : float
+            Temperature, [K]
 
-        Returns:
-            dict: resudual component
+        Returns
+        -------
+        dict[str, float]
+            Returns residual component {"Substance name": lny_a}
         """
         g = {}  # группа: Г
         gp = {}  # вещество: {группа: Гi}
@@ -245,9 +279,9 @@ class Unifac(Activity_model):
                     k = self.t_groups[s].id
                     a_mk = self.interaction_matrix[m][k]
                     s1 += tet[t] * exp(- (a_mk[0]
-                                          + a_mk[1] * temperature
-                                          + a_mk[2] * temperature ** 2)
-                                       / temperature)
+                                          + a_mk[1] * T
+                                          + a_mk[2] * T ** 2)
+                                       / T)
 
                 # сумма под вторым логарифмом
                 for t in gr:
@@ -256,9 +290,9 @@ class Unifac(Activity_model):
                     a_km = self.interaction_matrix[k][m]
                     num = tet[t] * exp(
                         - (a_km[0]
-                           + a_km[1] * temperature
-                           + a_km[2] * temperature ** 2)
-                        / temperature)  # значение в числителе для m
+                           + a_km[1] * T
+                           + a_km[2] * T ** 2)
+                        / T)  # значение в числителе для m
                     den = 0
                     # расчет знаменателя
                     for u in gr:
@@ -266,9 +300,9 @@ class Unifac(Activity_model):
                         m = self.t_groups[t].id
                         a_nm = self.interaction_matrix[n][m]
                         den += tet[u] * exp(- (a_nm[0]
-                                               + a_nm[1] * temperature
-                                               + a_nm[2] * temperature ** 2)
-                                            / temperature)
+                                               + a_nm[1] * T
+                                               + a_nm[2] * T ** 2)
+                                            / T)
                     s2 += num / den
                 rez[s] = self.t_groups[s].Q * (1 - log(s1) - s2)
             return rez
@@ -293,18 +327,46 @@ class Unifac(Activity_model):
 
         return rez
 
-    def get_ge(self, inp, T=298, n=1):
-        y = self.get_y(inp, T=T)
+    def get_ge(self, system: dict[str, float], T=298) -> float:
+        """Calculate excess molar Gibbs free energy
+
+        Parameters
+        ----------
+        system : dict[str, float]
+            Input dictionary {"Substance name": concentration}
+        T : int, optional
+            Temperature, [K], by default 298
+
+        Returns
+        -------
+        float
+            excess molar Gibbs free energy
+        """
+        y = self.get_y(system, T=T)
         ge = 0
-        for sub in inp:
-            ge += n*inp[sub]*log(y[sub])
+        for sub in system:
+            ge += system[sub] * log(y[sub])
         return R * T * ge
 
-    def get_ge_RT(self, inp, T=298, n=1):
-        y = self.get_y(inp, T=T)
+    def get_ge_RT(self, system, T=298):
+        """Calculate excess molar Gibbs free energy divided by RT
+
+        Parameters
+        ----------
+        system : dict[str, float]
+            Input dictionary {"Substance name": concentration}
+        T : int, optional
+            Temperature, [K], by default 298
+
+        Returns
+        -------
+        float
+            excess molar Gibbs free energy
+        """
+        y = self.get_y(system, T=T)
         ge = 0
-        for sub in inp:
-            ge += n*inp[sub]*log(y[sub])
+        for sub in system:
+            ge += system[sub] * log(y[sub])
         return ge
 
     def get_t2(self, i, j):
@@ -325,6 +387,8 @@ class Unifac(Activity_model):
         return (s[:-1])
 
     def __check_inter(self):
+        """Checks for the presence of aij and aji parameters for all groups
+        """
         groups = []
         ph = self.phase
         # создается список с именами всех групп в данной фазе
