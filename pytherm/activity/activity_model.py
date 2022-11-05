@@ -1,4 +1,4 @@
-class Activity_model():
+class ActivityModel():
     def get_y(self, system, T):
         pass
 

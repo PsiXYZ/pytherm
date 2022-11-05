@@ -1,6 +1,7 @@
 from math import log, log10
+
+from pytherm import constants
 from .solver import minimize
-import constants
 
 R = constants.R
 
