@@ -1,18 +1,19 @@
-from operator import le
 from pytherm import base, sm, gaseq
-from pytherm import gaseq_prototype as gaseq2
+from pytherm import gaseq as gaseq2
 
-T = 900  # [K]
+
+T = 900 + 273  # [K]
+P = 1
 system = {
-    'CO2': 2,
-    'CO': 0.1,
-    'H2O': 6,
-    'H2': 0.00001,
-    'CH4': 5,
+    # 'CO2': 2,
+    # 'CO': 0.1,
+    # 'H2O': 6,
+    'H2': 0.0000,
+    'CH4': 4,
     'C2H6': 1,
-    'C2H4': 0.00001,
-    'C2H2': 0.00001,
-    'C6H6': 0.00001,
+    'C2H4': 0.0,
+    'C2H2': 0.0,
+    'C6H6': 0.0,
 }
 hf = {
     'H2': 0,
@@ -87,16 +88,29 @@ K = base.get_k(
 )
 print("K", K)
 
-for i in range(len(r_mat)):
-    r = sm.react_string(r_mat[i], components)
-    print(f"{r}, K={K[i]}")
+for i in r_mat:
+    print(sm.react_string(i, components))
 
-gaseq.find_eq(
-    r_mat=r_mat,
+out = gaseq2.find_eq(
     n0=tuple(system.values()),
+    r_mat=r_mat,
     K=K,
     T=T,
-    P=1,
-    fabs=1e-2,
-    ftol=1e-12
+    P=P
 )
+
+n0 = 0
+for i in system:
+    n0 += system[i]
+for i in system:
+    system[i] /= n0
+print(system)
+
+for i in range(len(components)):
+    system[components[i]] = out[i]
+n0 = 0
+for i in system:
+    n0 += system[i]
+for i in system:
+    system[i] /= n0
+print(system)
