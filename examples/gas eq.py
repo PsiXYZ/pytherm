@@ -1,4 +1,6 @@
+from operator import le
 from pytherm import base, sm, gaseq
+from pytherm import gaseq_prototype as gaseq2
 
 T = 900  # [K]
 system = {
@@ -85,13 +87,16 @@ K = base.get_k(
 )
 print("K", K)
 
-for i in r_mat:
-    print(sm.react_string(i, components))
+for i in range(len(r_mat)):
+    r = sm.react_string(r_mat[i], components)
+    print(f"{r}, K={K[i]}")
 
 gaseq.find_eq(
     r_mat=r_mat,
     n0=tuple(system.values()),
     K=K,
     T=T,
-    P=1
+    P=1,
+    fabs=1e-2,
+    ftol=1e-12
 )
