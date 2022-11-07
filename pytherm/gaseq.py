@@ -42,7 +42,8 @@ def find_eq(r_mat, n0, K, T, P, ftol=1e-12, fabs=1e-4, notifier=None):
         res = []
         pr = get_pr(ksi)
         for i in range(len(K)):
-            res.append(abs(8.314 * T * (log(pr[i]) - log(K[i]))))
+            # res.append(abs(8.314 * T * (log(pr[i]) - log(K[i]))))
+            res.append(abs((log(pr[i]) - log(K[i]))))
         return res
 
     def uf(ksi, r):

@@ -1,7 +1,7 @@
-from math import log
 import numpy as np
 
-def find_eq(n0, r_mat, K, T, P, ftol=1e-12, fabs=1e-15, k_lim=1e10):
+
+def find_eq(n0, r_mat, K, T, P, ftol=1e-12, fabs=1e-4, k_lim=1e10):
 
     # пересчет К на давление
     for i in range(len(K)):
@@ -32,7 +32,8 @@ def find_eq(n0, r_mat, K, T, P, ftol=1e-12, fabs=1e-15, k_lim=1e10):
 
     def fi(ksi):
         pr = get_pr(ksi)
-        res = (pr - K) ** 2
+        # res = (pr - K) ** 2
+        res = np.abs(np.log(pr) - np.log(K))
         return res
 
     def get_rl(ri):
@@ -57,27 +58,11 @@ def find_eq(n0, r_mat, K, T, P, ftol=1e-12, fabs=1e-15, k_lim=1e10):
         r_r = min(vals)
         return r_r
 
-    def uf(ksi, r):
-        n = get_n(ksi)
-        xi = []
-        s = sum(n)
-        for i in n:
-            xi.append(i / s)
-
-        x = 1
-        y = 1
-        for i in range(len(r_mat[r])):
-            if r_mat[r][i] > 0:
-                x *= xi[i] ** r_mat[r, i]
-            if r_mat[r][i] < 0:
-                y *= xi[i] ** (- r_mat[r, i])
-        return y * K[r] - x
-
-    ksi = np.full(len(K),0, dtype=float)
+    ksi = np.full(len(K), 0, dtype=float)
     while (1):
         f = fi(ksi)
-        print("F = ", f)
-        print("ksi = ", ksi)
+        # print("F = ", f)
+        # print("ksi = ", ksi)
 
         if np.sum(f) < fabs:
             break
@@ -102,8 +87,8 @@ def find_eq(n0, r_mat, K, T, P, ftol=1e-12, fabs=1e-15, k_lim=1e10):
         while (1):
             rs[1] = (rs[0] + rs[2]) / 2
             p_ksi[ri] = rs[1]
-            print("F = ", fi(p_ksi))
-            print("Ksi = ", p_ksi)
+            # print("F = ", fi(p_ksi))
+            # print("Ksi = ", p_ksi)
             res = (K - get_pr(p_ksi))
             vals_u[1] = vals_u[0]
             vals_u[0] = fi(p_ksi)[ri]
