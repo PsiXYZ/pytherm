@@ -1,4 +1,4 @@
-import pytherm.liquids as lq
+import pytherm.lle as lq
 import pytherm.activity.unifac_old as uf
 
 comp = ["hexane", "acetonitrile"]
