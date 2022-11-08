@@ -1,84 +1,102 @@
 from math import log, log10
-
 from pytherm import constants
 from .solver import minimize
+from pytherm.activity.activity_model import ActivityModel
 
 R = constants.R
 
 
-def get_yinf(activity_model,
-             phase: dict[str, float],
+def get_yinf(activity_model: ActivityModel,
+             system: dict[str, float],
              comp_name: str) -> float:
-    """Calculate activity at infinity dilution
+    """Calculate activity coefficient at infinity dilution
 
-    Returns activity at infinity dilution (y inf) for ph by extrapolation to
-    low concentration
+    Parameters
+    ----------
+    activity_model : ActivityModel
+        model for activity calculation
+    phase : dict[str, float]
+        Input dictionary {"Substance name": concentration}
+    comp_name : str
+        name of target component from ph
 
-    Args:
-        am (ActivityModel): model for activity calculation
-        ph (dict[str, float]): _description_
-        comp_name (str): name of target component from ph
-
-    Returns:
-        float: activity at infinity dilution
+    Returns
+    -------
+    float
+        activity coefficient at infinity dilution
     """
     n_ph = 1
     n_comp = 1E-9
     x = {}
     n = {}
-    for i in phase:
-        n[i] = phase[i] * n_ph
+    for i in system:
+        n[i] = system[i] * n_ph
     n[comp_name] = n_comp
-    for i in phase:
+    for i in system:
         x[i] = n[i] / n_ph
     y = activity_model.get_y(x)
     return y[comp_name]
 
 
-def get_k_molar(activity_model,
-                phase1: dict[str, float],
-                phase2: dict[str, float],
+def get_k_molar(activity_model: ActivityModel,
+                system1: dict[str, float],
+                system2: dict[str, float],
                 comp_name: str) -> float:
     """Calculate partition coefficient using molar fraction
 
-    Args:
-        activity_model (ActivityModel): model for activity calculation
-        phase1 (dict[str, float]): component dictionary for phase 1
-        phase2 (dict[str, float]): component dictionary for phase 2
-        comp_name (str): target component name
+    Parameters
+    ----------
+    activity_model : ActivityModel
+        model for activity calculation
+    system1 : dict[str, float]
+        component dictionary for phase 1
+    phase2 : dict[str, float]
+        component dictionary for phase 2
+    comp_name : str
+        target component name
 
-    Returns:
-        float: partition coefficient
+    Returns
+    -------
+    float
+        partition coefficient
     """
-    phase1_y = get_yinf(activity_model, phase1, comp_name)
-    phase2_y = get_yinf(activity_model, phase2, comp_name)
+    phase1_y = get_yinf(activity_model, system1, comp_name)
+    phase2_y = get_yinf(activity_model, system2, comp_name)
     return phase2_y / phase1_y
 
 
-def get_kp(am,
-           phase1: dict[float],
-           phase2: dict[float],
-           molar_volume: dict[str, float],
+def get_kp(activity_model: ActivityModel,
+           system1: dict[str, float],
+           system2: dict[str, float],
+           molar_volumes: dict[str, float],
            comp_name: str) -> float:
     """Calculate partition coefficient
 
-    Args:
-        am (ActivityModel): model for activity calculation
-        phase1 (dict[float]): component dictionary for phase 1
-        phase2 (dict[float]): component dictionary for phase 2
-        molar_volume (dict[str, float]): molar volume dictionary
-        comp_name (str): target component name
+    Parameters
+    ----------
+    activity_model : ActivityModel
+        model for activity calculation
+    system1 : dict[str, float]
+        component dictionary for phase 1
+    system2 : dict[str, float]
+        component dictionary for phase 2
+    molar_volumes : dict[str, float]
+        molar volume dictionary
+    comp_name : str
+        target component name
 
-    Returns:
-        float: partition coefficient
+    Returns
+    -------
+    float
+        partition coefficient
     """
     v1 = 0
     v2 = 0
-    for i in phase1.keys():
+    for i in system1.keys():
         if i != comp_name:
-            v1 += phase1[i] / molar_volume[i]
-            v2 += phase2[i] / molar_volume[i]
-    kexp = get_k_molar(am, phase1, phase2, comp_name)
+            v1 += system1[i] / molar_volumes[i]
+            v2 += system2[i] / molar_volumes[i]
+    kexp = get_k_molar(activity_model, system1, system2, comp_name)
     rez = kexp * v2/v1
     print("V2/V1 = ", v2/v1)
     return rez
@@ -107,14 +125,6 @@ def find_lle(phase1: dict[str, float],
              activity_model,
              temperature=298,
              notifier=lle_notifier):
-    """Calculate eqilibrium composition
-
-    Args:
-        phase1 (dict[str, float]): component dictionary for phase 1
-        phase2 (dict[str, float]): component dictionary for phase 2
-        activity_model (activity_model): model for activity calculation
-        notifier: print results
-    """
     # ph1 -> ph2
     n1 = 10  # initial amount of phase 1
     n2 = 10  # initial amount of phase 2
@@ -181,13 +191,14 @@ def find_lle(phase1: dict[str, float],
         lle_notifier(f, phase1, phase2)
 
 
-def calculate_solubility(activity_model,
+def calculate_solubility(activity_model: ActivityModel,
                          comp_name,
-                         T,
-                         T_m,
-                         H_m,
+                         T: float,
+                         T_m: float,
+                         H_m: float,
                          bounds=(1e-20, 0.99),
-                         f_tol=1e-18):
+                         ftol=1e-18,
+                         fabs=1e-10):
     phase = {}
     phase[comp_name[0]] = 1
     phase[comp_name[1]] = 0
@@ -199,7 +210,7 @@ def calculate_solubility(activity_model,
     def f(x):
         phase[comp_name[1]] = x
         phase[comp_name[0]] = 1 - x
-        y = activity_model.get_y(phase, temperature=T)
+        y = activity_model.get_y(phase, T=T)
         return (log(phase[comp_name[1]] * y[comp_name[1]]) - lnx)
 
     while(1):
@@ -208,9 +219,6 @@ def calculate_solubility(activity_model,
             b = x
         elif f(x) * f(b) < 0:
             a = x
-        # print(x, a, b, f(x))
-        if abs(b - a) < f_tol or abs(f(x)) < 1e-10:
+        if abs(b - a) < ftol or abs(f(x)) < fabs:
             break
-
-    # print(f"X: {x:.1e} \tM: {x * 354 / 18:.1e} \tD: {f(x):.1e}")
     return x
