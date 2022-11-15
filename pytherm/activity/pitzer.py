@@ -29,7 +29,7 @@ class Pitzer:
     def get_f(self, I, A, b=1.2):
         return - 4 * A * I * np.log(1 + b * np.sqrt(I)) / b
 
-    def get_A(self, ro=0.99707, D=78.4, T=298):
+    def get_A(self, T=298):
         return (0.13422 *
                 (4.1725332 - 0.1481291 * T ** (0.5)
                  + 1.5188505 * 10 ** (-5) * T ** 2
@@ -37,6 +37,18 @@ class Pitzer:
                  + 9.3816144 * 10 ** (-10) * T ** (3.5)))
 
     def get_I(self, ph):
+        """Calculate ionic strength
+
+        Parameters
+        ----------
+        ph : _type_
+            _description_
+
+        Returns
+        -------
+        float
+            ionic strength
+        """
         I = 0
         for s in ph:
             I += ph[s] * self.charge[s] ** 2
@@ -78,6 +90,22 @@ class Pitzer:
         return z
 
     def get_gibbs(self, ph):
+        """Calculate excess :math:`G^{ex}/(w_{w}RT)`
+        .. math::
+            G^{ex}/(w_{w}RT) = f(I)
+            + 2 \sum_{c}\sum_{a}[B_{ca}
+            + (\sum_{c}m_c z_c)C_{ca}] \\
+            + \sum_{c}\sum_{c'} m_c m_{c'} [2\Phi_{cc'} + \sum_a m_a \psi_{cc'a}] 
+            + \sum_{a}\sum_{a'} m_a m_{a'} [2\Phi_{aa'} + \sum_c m_c \psi_{caa'}] \\
+            + 2 \sum_n\sum_c m_n m_c \lambda_{nc}
+            + 2 \sum_n\sum_a m_n m_a \lambda_{na} 
+            + 2 \sum_n\sum_{n'} m_n m_{n'} \lambda_{nn'} + ... 
+
+        Parameters
+        ----------
+        ph : _type_
+            _description_
+        """
         def get_ca():
             value_ca = 0
             for c in self.cations:
@@ -220,6 +248,18 @@ class Pitzer:
         return gibbs
 
     def get_harvie_j(self, x):
+        """Calculate J using Chebyshev polynomial approximations
+
+        Parameters
+        ----------
+        x : _type_
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         akI = (
             -0.000000000010991,
             -0.000000000002563,
@@ -295,6 +335,24 @@ class Pitzer:
         return 6 * z1 * z2 * A * np.sqrt(I)
 
     def get_theta_e(self, s1, s2, I):
+        """Calculate excess term :math:`^E\theta_{ij}` for :math:`\Phi_{ij}` using
+        .. math::
+            \theta_{MN}=(z_M z_N)/4I [J(x_{MN})-1/2 J(x_{MM} )-1/2 J(x_{NN})]
+
+        Parameters
+        ----------
+        s1 : _type_
+            _description_
+        s2 : _type_
+            _description_
+        I : _type_
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         z_m = self.charge[s1]
         z_n = self.charge[s2]
 
