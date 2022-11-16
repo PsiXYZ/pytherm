@@ -8,10 +8,27 @@ calculations with the UNIFAC model.
 UNIFAC Class
 ============
 .. autoclass:: UNIFAC
-    :members: get_y
+    :members: get_y, get_comb_original, get_comb_mod, get_res
     :undoc-members:
     :show-inheritance:
     :member-order: bysource
+
+
+UNIFAC substances
+=================
+
+UNIFAC parameters
+=================
+Parameters must be a special :obj:`.ParametersUNIFAC` object
+
+There are some ready to use :obj:`.ParametersUNIFAC` object in :obj:`.unifac.datasets`:
+
+* :obj:`.unifac.datasets.VLE` contains VLE parameters set for classic UNIFAC (:obj:`.db.unifac.parameters.vle.VLE`) [1]_
+
+References
+----------
+
+.. [1] Published DDB parameters, 2021 JAN, https://www.ddbst.com/published-parameters-unifac.html
 
 """
 from math import log, exp, e
@@ -25,7 +42,7 @@ R = constants.R
 
 
 class UNIFAC(ActivityModel):
-    r"""Unifac model for activity coefficients calculation
+    r"""UNIFAC model for activity coefficients calculation
 
     parameters sources
     VLE: published DDB parameters, 2021 JAN,
@@ -91,7 +108,10 @@ class UNIFAC(ActivityModel):
     def get_y(self,
               system: dict[str, float],
               T=298) -> dict[str, float]:
-        """Calculate activity coefficietns for system dict
+        r"""Calculate activity coefficietns for system dict
+
+        .. math::
+            \gamma_i =  \exp\left(\ln \gamma_i^c + \ln \gamma_i^r \right)
 
         Parameters
         ----------
@@ -118,7 +138,21 @@ class UNIFAC(ActivityModel):
         return y
 
     def get_comb_original(self, inp: SubstancesUNIFAC, z=10) -> dict[str, float]:
-        """Calculate combinatorial component (lny_c) using original equation
+        r"""Calculate combinatorial component :math:`\ln\gamma_i^c` using original UNIFAC equation
+
+        .. math::
+            \ln \gamma_i^c = \ln \frac{\phi_i}{x_i} + \frac{z}{2} q_i
+            \ln\frac{\theta_i}{\phi_i} + L_i - \frac{\phi_i}{x_i}
+            \sum_{j=1}^{n} x_j L_j
+
+        .. math::
+            \theta_i = \frac{x_i q_i}{\sum_{j=1}^{n} x_j q_j}
+
+        .. math::
+            \phi_i = \frac{x_i r_i}{\sum_{j=1}^{n} x_j r_j}
+
+        .. math::
+            L_i = 5(r_i - q_i)-(r_i-1)
 
         Parameters
         ----------
@@ -181,7 +215,20 @@ class UNIFAC(ActivityModel):
         return rez
 
     def get_comb_mod(self, inp: SubstancesUNIFAC, z=10) -> dict[str, float]:
-        """Calculate combinatorial component (lny_c) using modified equation
+        r"""Calculate combinatorial component :math:`\ln\gamma_i^c` using modified equation
+
+        .. math::
+            \ln \gamma_i^c = 1 - {V'}_i + \ln({V'}_i) - 5q_i \left(1
+            - \frac{V_i}{F_i}+ \ln\left(\frac{V_i}{F_i}\right)\right)
+
+        .. math::
+            V'_i = \frac{r_i^{3/4}}{\sum_j r_j^{3/4}x_j}
+
+        .. math::
+            V_i = \frac{r_i}{\sum_j r_j x_j}
+
+        .. math::
+            F_i = \frac{q_i}{\sum_j q_j x_j}
 
         Parameters
         ----------
@@ -246,7 +293,25 @@ class UNIFAC(ActivityModel):
         return rez
 
     def get_res(self, inp, T: float) -> dict[str, float]:
-        """Calculate residual component using original equation
+        r"""Calculate residual component :math:`\ln\gamma_i^r` using original equation
+
+
+        .. math::
+            \ln \gamma_i^r = \sum_{k}^n \nu_k^{(i)} \left[ \ln \Gamma_k
+            - \ln \Gamma_k^{(i)} \right]
+
+        .. math::
+            \ln \Gamma_k = Q_k \left[1 - \ln \sum_m \Theta_m \Psi_{mk} - \sum_m
+            \frac{\Theta_m \Psi_{km}}{\sum_n \Theta_n \Psi_{nm}}\right]
+
+        .. math::
+            \Theta_m = \frac{Q_m X_m}{\sum_{n} Q_n X_n}
+
+        .. math::
+            X_m = \frac{ \sum_j \nu^j_m x_j}{\sum_j \sum_n \nu_n^j x_j}
+
+        .. math::
+            \Psi_{mn} = \exp\left(\frac{-a_{mn} - b_{mn}T - c_{mn}T^2}{T}\right)
 
         Parameters
         ----------

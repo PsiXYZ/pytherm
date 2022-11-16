@@ -1,3 +1,10 @@
+"""VLE parameters set for UNIFAC
+
+.. autodata:: VLE
+    :no-value:
+
+"""
+
 from .. import ParametersUNIFAC
 
 # id; Subgroup Name; R; Q

@@ -1,3 +1,8 @@
+"""Contains parameters sets :obj:`.ParametersUNIFAC` for UNIFAC
+
+:obj:`.VLE`
+"""
+
 from .dor import DOR
 from .inf import INF
 from .lle import LLE

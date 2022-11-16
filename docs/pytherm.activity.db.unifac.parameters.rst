@@ -17,7 +17,7 @@ Submodules
 Module contents
 ---------------
 
-.. automodule:: pytherm.activity.db.unifac.parameters
+.. automodule:: pytherm.activity.db.unifac.parameters.vle
    :members:
    :undoc-members:
    :show-inheritance:
