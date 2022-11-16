@@ -5,6 +5,8 @@ from .db import pitzer as datasets
 
 
 class Pitzer:
+    """Pitzer model for activity coefficients calculation
+    """
     ph = []
     cations = []
     anions = []
@@ -90,8 +92,10 @@ class Pitzer:
         return z
 
     def get_gibbs(self, ph):
-        """Calculate excess :math:`G^{ex}/(w_{w}RT)`
+        r"""Calculate excess :math:`G^{ex}/(w_{w}RT)`
+
         .. math::
+
             G^{ex}/(w_{w}RT) = f(I)
             + 2 \sum_{c}\sum_{a}[B_{ca}
             + (\sum_{c}m_c z_c)C_{ca}] \\
@@ -335,9 +339,10 @@ class Pitzer:
         return 6 * z1 * z2 * A * np.sqrt(I)
 
     def get_theta_e(self, s1, s2, I):
-        """Calculate excess term :math:`^E\theta_{ij}` for :math:`\Phi_{ij}` using
+        r"""Calculate excess term :math:`^E\theta_{ij}` for :math:`\Phi_{ij}` using
+
         .. math::
-            \theta_{MN}=(z_M z_N)/4I [J(x_{MN})-1/2 J(x_{MM} )-1/2 J(x_{NN})]
+            \theta_{MN}=\frac{z_M z_N}{4I}[J(x_{MN})- 0.5 J(x_{MM} )- 0.5 J(x_{NN})]
 
         Parameters
         ----------

@@ -8,7 +8,7 @@ ph1['acetonitrile'] = 1 - ph1['hexane']
 subs = uf.datasets.SubstancesUNIFAC()
 subs.get_from_defsubs(ph1)
 
-am = uf.Unifac(dataset=uf.datasets.DOR,
+am = uf.UNIFAC(dataset=uf.datasets.DOR,
                substances=subs)
 
 print(am.get_y(ph1))

@@ -1,5 +1,33 @@
 """
-parameter sources:
+
+This module contains a class :obj:`UNIFAC` for performing activity coefficient
+calculations with the UNIFAC model.
+
+.. contents:: :local:
+
+UNIFAC Class
+============
+.. autoclass:: UNIFAC
+    :members: get_y
+    :undoc-members:
+    :show-inheritance:
+    :member-order: bysource
+
+"""
+from math import log, exp, e
+from typing import Callable
+from pytherm import constants
+from .db import unifac as datasets
+from .db.unifac import ParametersUNIFAC, SubstancesUNIFAC
+from .activity_model import ActivityModel
+
+R = constants.R
+
+
+class UNIFAC(ActivityModel):
+    r"""Unifac model for activity coefficients calculation
+
+    parameters sources
     VLE: published DDB parameters, 2021 JAN,
         https://www.ddbst.com/published-parameters-unifac.html
     LLE: Magnussen1981,
@@ -13,39 +41,39 @@ parameter sources:
 
     VLE, LLE, INF: original COMB and RES (1 param)
     DOR, NIST2015: mod COMB and res (3 param)
-"""
-from math import log, exp, e
-from typing import Callable
-from pytherm import constants
-from .db import unifac as datasets
-from .db.unifac import ParametersUNIFAC, SubstancesUNIFAC
-from .activity_model import ActivityModel
 
-R = constants.R
+    Parameters
+    ----------
+    dataset : ParametersUNIFAC
+        ParametersUNIFAC object with interaction parameters
+    substances : SubstancesUNIFAC
+        Substances UNIFAC object with substance's group representation
 
+    Raises
+    ------
+    Warning
+        Raises if unifac_mode is unknown (not classic or modified)
 
-class Unifac(ActivityModel):
-    """Unifac model for activity coefficients calculation
+    Examples
+    --------
+
+    >>> import pytherm.activity.unifac as uf
+    >>> ph1 = {}
+    >>> ph1['hexane'] = 0.99
+    >>> ph1['acetonitrile'] = 1 - ph1['hexane']
+    >>> subs = uf.datasets.SubstancesUNIFAC()
+    >>> subs.get_from_defsubs(ph1)
+    >>> am = uf.UNIFAC(dataset=uf.datasets.DOR,
+    ...               substances=subs)
+    >>> am.get_y(ph1)
+    {'hexane': 1.0006158487552312, 'acetonitrile': 30.432678250858537}
+
     """
     get_comb: Callable
 
     def __init__(self,
                  dataset: ParametersUNIFAC,
                  substances: SubstancesUNIFAC):
-        """Unifac constructor
-
-        Parameters
-        ----------
-        dataset : ParametersUNIFAC
-            ParametersUNIFAC object with interaction parameters
-        substances : SubstancesUNIFAC
-            Substances UNIFAC object with substance's group representation
-
-        Raises
-        ------
-        Warning
-            Raises if unifac_mode is unknown (not classic or modified)
-        """
         self.unifac_mode = dataset['type']
         self.interaction_matrix = dataset['res']
         self.t_groups = dataset['comb']
@@ -104,6 +132,7 @@ class Unifac(ActivityModel):
         dict[str, float]
             Returns lny_c {"Substance name": lny_c}
         """
+
         def get_r(name):
             r = 0
             for i in inp[name].groups:
@@ -166,6 +195,7 @@ class Unifac(ActivityModel):
         dict[str, float]
             Returns lny_c {"Substance name": lny_c}
         """
+
         def get_r(name):
             r = 0
             for i in inp[name].groups:
@@ -211,7 +241,7 @@ class Unifac(ActivityModel):
             xi = inp[i].x
 
             lny = 1 - fic + log(fic) - z / 2 * qi * \
-                (log(fi / ti) + 1 - fi / ti)
+                  (log(fi / ti) + 1 - fi / ti)
             rez[i] = lny
         return rez
 

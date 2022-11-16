@@ -34,7 +34,7 @@ system = {
 substances = uf.datasets.SubstancesUNIFAC()
 substances.get_from_dict(subs)
 
-am = uf.Unifac(dataset=uf.datasets.PSRK,
+am = uf.UNIFAC(dataset=uf.datasets.PSRK,
                substances=substances)
 model = PSRK(system=system, ms_params=ms_params, activity_model=am)
 
