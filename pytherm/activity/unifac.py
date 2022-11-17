@@ -16,6 +16,7 @@ UNIFAC Class
 
 UNIFAC substances
 -----------------
+Substances must be a special :obj:`.SubstancesUNIFAC` object
 
 UNIFAC parameters
 -----------------
@@ -72,17 +73,20 @@ class UNIFAC(ActivityModel):
 
     Examples
     --------
-
     >>> import pytherm.activity.unifac as uf
-    >>> ph1 = {}
-    >>> ph1['hexane'] = 0.99
-    >>> ph1['acetonitrile'] = 1 - ph1['hexane']
-    >>> subs = uf.datasets.SubstancesUNIFAC()
-    >>> subs.get_from_defsubs(ph1)
-    >>> am = uf.UNIFAC(dataset=uf.datasets.DOR,
-    ...               substances=subs)
-    >>> am.get_y(ph1)
-    {'hexane': 1.0006158487552312, 'acetonitrile': 30.432678250858537}
+    >>> subs = {
+    ...    "n-hexane": "2*CH3 4*CH2",
+    ...    "butanone-2": "1*CH3 1*CH2 1*CH3CO",
+    ... }
+    >>> system = {
+    ...    'n-hexane': 0.5,
+    ...    'butanone-2': 0.5,
+    ... }
+    >>> substances = uf.datasets.SubstancesUNIFAC()
+    >>> substances.get_from_dict(subs)
+    >>> am = uf.UNIFAC(dataset=uf.datasets.DOR, substances=substances)
+    >>> am.get_y(system=system, T=298)
+    {'n-hexane': 1.514766775270851, 'butanone-2': 1.4331647782163541}
     """
     get_comb: Callable
 

@@ -1,5 +1,6 @@
-"""VLE parameters set for UNIFAC
-
+"""VLE parameters set for UNIFAC from
+Published DDB parameters,
+    https://www.ddbst.com/published-parameters-unifac.html
 .. autodata:: VLE
     :no-value:
 
