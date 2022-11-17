@@ -39,6 +39,8 @@ from pytherm.activity.db.unifac import defsubs
 class ParametersUNIFAC(dict):
     """Class for UNIFAC parameters processing
 
+    Res parameters are stored as dict['res'][i][j]. Comb parameters are stored as dict['comb']['name']: :obj:`Group`
+
     Examples
     --------
     >>> t1 = [
