@@ -6,7 +6,7 @@ calculations with the UNIFAC model.
 .. contents:: :local:
 
 UNIFAC Class
-============
+------------
 .. autoclass:: UNIFAC
     :members: get_y, get_comb_original, get_comb_mod, get_res
     :undoc-members:
@@ -15,20 +15,32 @@ UNIFAC Class
 
 
 UNIFAC substances
-=================
+-----------------
 
 UNIFAC parameters
-=================
+-----------------
 Parameters must be a special :obj:`.ParametersUNIFAC` object
 
-There are some ready to use :obj:`.ParametersUNIFAC` object in :obj:`.unifac.datasets`:
+There are some ready to use :obj:`.ParametersUNIFAC` objects in :obj:`.unifac.datasets`:
 
-* :obj:`.unifac.datasets.VLE` contains VLE parameters set for classic UNIFAC (:obj:`.db.unifac.parameters.vle.VLE`) [1]_
+* Classic UNIFAC:
+    * :obj:`.unifac.datasets.VLE` (:obj:`.db.unifac.parameters.vle.VLE`) [1]_
+    * :obj:`.unifac.datasets.LLE` (:obj:`.db.unifac.parameters.vle.LLE`) [2]_
+    * :obj:`.unifac.datasets.INF` (:obj:`.db.unifac.parameters.vle.INF`) [3]_
+* Modified UNIFAC:
+    * :obj:`.unifac.datasets.DOR` (:obj:`.db.unifac.parameters.vle.DOR`) [4]_
+    * :obj:`.unifac.datasets.NIST2015` (:obj:`.db.unifac.parameters.vle.NIST2015`) [5]_
 
 References
 ----------
 
-.. [1] Published DDB parameters, 2021 JAN, https://www.ddbst.com/published-parameters-unifac.html
+.. [1] Published DDB parameters, 2021 JAN, 
+    https://www.ddbst.com/published-parameters-unifac.html
+.. [2] Magnussen1981, DOI: https://doi.org/10.1021/i200013a024
+.. [3] Bastos1988, DOI: https://doi.org/10.1021/i200013a024
+.. [4] DOR, published DDB parameters, 2021 JAN,
+    https://www.ddbst.com/PublishedParametersUNIFACDO.html
+.. [5] Kang2015, DOI: https://doi.org/10.1016/j.fluid.2014.12.042
 
 """
 from math import log, exp, e
@@ -44,20 +56,7 @@ R = constants.R
 class UNIFAC(ActivityModel):
     r"""UNIFAC model for activity coefficients calculation
 
-    parameters sources
-    VLE: published DDB parameters, 2021 JAN,
-        https://www.ddbst.com/published-parameters-unifac.html
-    LLE: Magnussen1981,
-        DOI: https://doi.org/10.1021/i200013a024
-    INF: Bastos1988,
-        DOI: https://doi.org/10.1021/ie00079a030
-    DOR: published DDB parameters, 2021 JAN,
-        https://www.ddbst.com/PublishedParametersUNIFACDO.html
-    NIST2015: Kang2015,
-        DOI: https://doi.org/10.1016/j.fluid.2014.12.042
-
-    VLE, LLE, INF: original COMB and RES (1 param)
-    DOR, NIST2015: mod COMB and res (3 param)
+    UNIFAC type (classic or modified) depends on :obj:`.ParametersUNIFAC`
 
     Parameters
     ----------
@@ -84,7 +83,6 @@ class UNIFAC(ActivityModel):
     ...               substances=subs)
     >>> am.get_y(ph1)
     {'hexane': 1.0006158487552312, 'acetonitrile': 30.432678250858537}
-
     """
     get_comb: Callable
 
