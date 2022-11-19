@@ -1,3 +1,5 @@
+"""VIP module
+"""
 import numpy as np
 
 
@@ -66,16 +68,34 @@ def get_elements(substances) -> (np.array, np.array):
     return np.array(elements), np.array(elements_matrix).T
 
 
-# по матрице элементов составляет реакции
-def get_reaction(el_mat):
-    # необходимое кол-во реакций
-    n_react = el_mat.shape[1] - el_mat.shape[0]
-    # угловая матрица гаусса для el_mat
-    mat = gauss(el_mat)
-    react_mat = np.zeros([n_react, el_mat.shape[1]])
+def get_reaction_matrix(elements_matrix) -> np.array:
+    r"""Generate reaction matrix from elements matrix
+    Number of reaction = number of components - number of elements
 
-    print(n_react)
-    print(el_mat)
+    Parameters
+    ----------
+    elements_matrix
+        Elements matrix
+    Returns
+    -------
+    nd.array
+        Reaction matrix
+    Examples
+    --------
+    >>> from pytherm import stoichiometry as sm
+    >>> components = ['CH4', 'C2H6', 'C2H4', 'C2H2']
+    >>> elements, elements_matrix = sm.get_elements(components)
+    >>> r_mat = sm.get_reaction_matrix(elements_matrix)
+    >>> r_mat
+    >>> [[ 2. -2.  1.  0.]
+    ... [ 4. -3.  0.  1.]]
+
+    """
+    # необходимое кол-во реакций
+    n_react = elements_matrix.shape[1] - elements_matrix.shape[0]
+    # угловая матрица гаусса для el_mat
+    mat = __gauss(elements_matrix)
+    react_mat = np.zeros([n_react, elements_matrix.shape[1]])
 
     # поиск колонки с детерминантом не равным 0
     i_col = 0
@@ -100,7 +120,9 @@ def get_reaction(el_mat):
     return react_mat
 
 
-def gauss(m):
+def __gauss(m):
+    """Convert input matrix to diagonal matrix
+    """
     def swap(i, j):
         a = m[i]
         m[i] = m[j]
@@ -113,26 +135,37 @@ def gauss(m):
     return m
 
 
-# строковый вывод el
-def el_string(su, el, e_su):
-    print("___el test___")
-    for i in range(len(su)):
-        s = ""
-        s += su[i] + " = "
-        for j in range(len(el)):
-            s += str(e_su[i][j]) + str(el[j]) + " + "
-        print(s[0:-2:])
-    print("_____________")
+def reaction_to_str(reaction_vector, substances, sep='*'):
+    r"""Convert reaction vector to string
 
+    Parameters
+    ----------
+    reaction_vector
+        reaction vector
+    substances
+        substances array
+    sep
+        separator between coefficients and substances
+    Returns
+    -------
+    str
+        str reaction
+    Examples
+    --------
+    >>> from pytherm import stoichiometry as sm
+    >>> components = ['CH4', 'C2H6', 'C2H4', 'C2H2']
+    >>> reaction_vector = [ 2, -2,  1,  0]
+    >>> sm.reaction_to_str(reaction_vector, components)
+    2*C2H6 = 2*CH4 + 1*C2H4
 
-def react_string(c_v, su):
+    """
     s1 = ""
     s2 = ""
-    for i in range(len(c_v)):
-        if c_v[i] < 0:
-            s1 += str(int(abs(c_v[i]))) + "•" + su[i] + " + "
-        elif c_v[i] > 0:
-            s2 += str(int(abs(c_v[i]))) + "•" + su[i] + " + "
+    for i in range(len(reaction_vector)):
+        if reaction_vector[i] < 0:
+            s1 += str(int(abs(reaction_vector[i]))) + sep + substances[i] + " + "
+        elif reaction_vector[i] > 0:
+            s2 += str(int(abs(reaction_vector[i]))) + sep + substances[i] + " + "
     return s1[:-2] + "= " + s2[:-2]
 
 

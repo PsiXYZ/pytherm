@@ -64,7 +64,7 @@ kelly = {
 components = tuple(system.keys())
 
 el, e_su = sm.get_elements(components)
-r_mat = sm.get_reaction(e_su)
+r_mat = sm.get_reaction_matrix(e_su)
 
 print("components:", components)
 print("elements:",  el)
@@ -89,7 +89,7 @@ K = base.get_k(
 print("K", K)
 
 for i in r_mat:
-    print(sm.react_string(i, components))
+    print(sm.reaction_to_str(i, components))
 
 out = gaseq2.find_eq(
     n0=tuple(system.values()),
