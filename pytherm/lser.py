@@ -1,6 +1,6 @@
 import db.lser.constants as cons
 import db.lser.io as io
-import sm
+import stoichiometry
 
 
 def calc_desc():

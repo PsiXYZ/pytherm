@@ -1,6 +1,6 @@
 from math import exp, sqrt
 import numpy as np
-from ..sm import get_charge_dict
+from ..stoichiometry import get_charge_dict
 from .db import pitzer as datasets
 
 
