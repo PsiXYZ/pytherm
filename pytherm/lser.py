@@ -9,7 +9,7 @@ def calc_desc():
 
 def calc_volume(formula: str, bound_count: int) -> float:
     volume = 0
-    el, mat = sm.get_el([formula])
+    el, mat = sm.get_elements([formula])
     for i in range(len(el)):
         volume += cons.atomic_volumes[el[i]] * mat[i][0]
     return (volume - cons.bond_const * bound_count) / 100

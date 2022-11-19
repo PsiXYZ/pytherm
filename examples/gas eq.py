@@ -63,7 +63,7 @@ kelly = {
 }
 components = tuple(system.keys())
 
-el, e_su = sm.get_el(components)
+el, e_su = sm.get_elements(components)
 r_mat = sm.get_reaction(e_su)
 
 print("components:", components)

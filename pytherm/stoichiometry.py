@@ -1,19 +1,35 @@
 import numpy as np
 
 
-def get_el(su):
+def get_elements(substances) -> (np.array, np.array):
+    """Extract elements from input array
+
+    Parameters
+    ----------
+    substances
+        Input array with substances formulas
+    Returns
+    -------
+    np.array, np.array
+        Elements array, elements matrix
+    Examples
+    --------
+    >>> from pytherm import stoichiometry as sm
+    >>> components = ['CO2', 'CO', 'H2S']
+    >>> elements, elements_matrix = sm.get_elements(components)
+    >>> elements
+    ['C' 'O' 'H' 'S']
+    >>> elements_matrix
+    [[1 1 0]
+     [2 1 0]
+     [0 0 2]
+     [0 0 1]]
+
     """
-    По листу веществ возвращает два листа - первый это лист с набором элементов, второй это двумерный список с колвом
-    элементов в каждом веществе
+    elements_matrix = []  #
+    elements = []  # element types list
 
-    :param su: substance list
-    :return: 2 list - element list (C,H,O..), number of elements in sub ()
-    """
-
-    e_su = []  #
-    el = []  # element types list
-
-    for s in su:
+    for s in substances:
         # поиск кол-ва элементов в системе (элемент 1 большая буква или 1б +1м)
         for i in range(len(s)):
             if s[i].isupper():
@@ -21,33 +37,33 @@ def get_el(su):
                     le = 2
                 else:
                     le = 1
-                if not s[i:i+le] in el:
-                    el.append(s[i:i+le])
+                if not s[i:i+le] in elements:
+                    elements.append(s[i:i+le])
     # создание матрицы с колвом элементов в каждом веществе
-    for i in su:
-        e_su.append([0]*len(el))
+    for i in substances:
+        elements_matrix.append([0]*len(elements))
     # заполнение матрицы с колвом элементов
-    for i in range(len(su)):
-        for j in range(len(su[i])):
+    for i in range(len(substances)):
+        for j in range(len(substances[i])):
             # получение длины элемента (1 или 2)
-            if su[i][j].isupper():
-                if (j+1 < len(su[i])) and su[i][j+1].islower():
+            if substances[i][j].isupper():
+                if (j+1 < len(substances[i])) and substances[i][j + 1].islower():
                     le = 2
                 else:
                     le = 1
                 # поиск цифры после элемента
                 k = j + le
                 str = ""
-                if (k < len(su[i])) and su[i][k].isdigit():
-                    while ((k < len(su[i])) and su[i][k].isdigit()):
-                        str += su[i][k]
+                if (k < len(substances[i])) and substances[i][k].isdigit():
+                    while ((k < len(substances[i])) and substances[i][k].isdigit()):
+                        str += substances[i][k]
                         k += 1
                     n = int(str)
                 else:
                     n = 1
-                index = el.index(su[i][j:j+le])
-                e_su[i][index] = n
-    return [el, np.array(e_su).T]
+                index = elements.index(substances[i][j:j + le])
+                elements_matrix[i][index] = n
+    return np.array(elements), np.array(elements_matrix).T
 
 
 # по матрице элементов составляет реакции
