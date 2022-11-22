@@ -392,7 +392,21 @@ class Pitzer:
         return (y2 - y1) / (2 * dm)
 
     def get_a_water(self, ph, n_m=55.50837):
-        osmotic = self.get_osmotic()
+        r"""Calculate water activity
+
+        .. math::
+            \ln{a_{H2O}} = -\frac{\phi\sum_{i} m_i}{55.50837}
+
+        Parameters
+        ----------
+        ph
+        n_m
+
+        Returns
+        -------
+
+        """
+        osmotic = self.get_osmotic(ph)
         s_m = 0
         for i in ph:
             s_m += ph[i]
@@ -400,6 +414,22 @@ class Pitzer:
         return np.exp(lna)
 
     def get_osmotic(self, ph, dw=1e-4, R=8.3145, T=298):
+        r"""Calculate osmotic coefficient
+
+        .. math::
+            \phi = 1 -  \frac{\frac{dG}{dw}}{R T \sum m_i}
+
+        Parameters
+        ----------
+        ph
+        dw
+        R
+        T
+
+        Returns
+        -------
+
+        """
         ph1 = {}
         ph2 = {}
         w_water = 1
