@@ -169,19 +169,27 @@ def reaction_to_str(reaction_vector, substances, sep='*'):
     return s1[:-2] + "= " + s2[:-2]
 
 
+def extract_charges(substances: list[str]):
+    charges = []
+    for i in substances:
+        j = i.index('_')
+        charges.append(int(i[j+1:]))
+    return charges
+
+
 def get_charge_dict():
     charge = {
         'H': +1,
         'NH4': +1,
-        'Na': +1,
-        'K': +1,
+        'Na_+1': +1,
+        'K_+1': +1,
         'Ca': +2,
         'Mg': +2,
         'MgOH': +1,
         'HSO4': -1,
         'SO4': -2,
         'NO3': -1,
-        'Cl': -1,
+        'Cl_-1': -1,
         'HCO3': -1,
         'CO3': -2,
         'OH': -1,
