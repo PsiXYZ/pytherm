@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class ParametersPitzer(dict):
     def __init__(self, parameters_name):
         self["parameters_name"] = parameters_name
@@ -129,3 +132,105 @@ class ParametersPitzer(dict):
                     return False
             else:
                 return False
+
+
+class ParametersPitzerNew(dict):
+    k = {
+        'B0': 2,
+        'B1': 2,
+        'B2': 2,
+        'C0': 2,
+        'THETA': 2,
+        'LAMDA': 2,
+        'ZETA': 3,
+        'PSI': 3,
+    }
+    raw_parameters = {}
+    poly_form = None
+
+    def load_from_dat(self, dat_path, f):
+        self.poly_form = f
+
+        df = open(dat_path)
+        bufer = []
+        for line in df:
+            b = line
+            while '  ' in b:
+                b = b.replace('  ', ' ')
+            if b[0] == ' ':
+                b = b[1:]
+            if b[0] == '#':
+                continue
+            if '#' in b:
+                i = b.index('#')
+                b = b[:i]
+            if b[-1:] == '\n':
+                b = b[:-1]
+            if b[-1] == ' ':
+                b = b[:-1]
+            bufer.append(b)
+        df.close()
+
+        for line in bufer:
+            if line[0] == '-':
+                key = line[1:]
+                continue
+            self.__unbox_values(line.split(' '), key)
+
+        for key in self.raw_parameters:
+            n_subs = self.k[key]
+            if n_subs == 2:
+                if key not in self:
+                    self[key] = {}
+                self[key] = {s: {} for s in self.raw_parameters[key]}
+            elif n_subs == 3:
+                if key not in self:
+                    self[key] = {}
+                for s1 in self.raw_parameters[key]:
+                    if s1 not in self[key]:
+                        self[key][s1] = {}
+                        for s2 in self.raw_parameters[key][s1]:
+                            if s2 not in self[key][s1]:
+                                self[key][s1][s2] = {}
+
+    def __unbox_values(self, line, key):
+        n_subs = self.k[key]
+        values = line[n_subs:]
+
+        if n_subs == 2:
+            s1, s2 = line[:n_subs]
+            if key not in self.raw_parameters:
+                self.raw_parameters[key] = {}
+            if s1 not in self.raw_parameters[key]:
+                self.raw_parameters[key][s1] = {}
+            self.raw_parameters[key][s1][s2] = np.array(list(map(float, values)))
+        elif n_subs == 3:
+            s1, s2, s3 = line[:n_subs]
+            if key not in self.raw_parameters:
+                self.raw_parameters[key] = {}
+            if s1 not in self.raw_parameters[key]:
+                self.raw_parameters[key][s1] = {}
+            if s2 not in self.raw_parameters[key][s1]:
+                self.raw_parameters[key][s1][s2] = {}
+            self.raw_parameters[key][s1][s2][s3] = np.array(list(map(float, values)))
+
+    def set_poly(self, f):
+        self.poly_form = f
+
+    def update_params(self, T):
+        coefs = self.poly_form(T)
+        for key in self.raw_parameters:
+            n_subs = self.k[key]
+            if n_subs == 2:
+                for s1 in self.raw_parameters[key]:
+                    for s2 in self.raw_parameters[key][s1]:
+                        params = self.raw_parameters[key][s1][s2]
+                        poly = coefs[:len(params)]
+                        self[key][s1][s2] = params @ poly
+            elif n_subs == 3:
+                for s1 in self.raw_parameters[key]:
+                    for s2 in self.raw_parameters[key][s1]:
+                        for s3 in self.raw_parameters[key][s1][s2]:
+                            params = self.raw_parameters[key][s1][s2][s3]
+                            poly = coefs[:len(params)]
+                            self[key][s1][s2][s3] = params @ poly
