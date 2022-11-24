@@ -30,22 +30,22 @@ class SIT:
 
     def get_y(self, ph: dict, T=298):
         molalities = np.array(list(ph.values()))
-
-        A = get_A(T)
         I = get_I(molalities, charges=self.charges)
         sqrt_I = math.sqrt(I)
-        D = A * sqrt_I / (1 + 1.5 * sqrt_I)
+        D = 0.509 * sqrt_I / (1 + 1.5 * sqrt_I)
 
         lny = np.zeros((len(self.substances)))
         for i in range(len(self.substances)):
             if self.charges[i] > 0:
                 j = np.where(self.cations == self.substances[i])[0][0]
                 lny[i] = - self.charges[i] ** 2 * D + self.epsilon_matrix[j, :] @ molalities[self.charges < 0]
+                # lny[i] = - self.charges[i] ** 2 * D + np.sum(self.epsilon_matrix[j, :] * I)
             else:
                 j = np.where(self.anions == self.substances[i])[0][0]
                 lny[i] = - self.charges[i] ** 2 * D + self.epsilon_matrix[:, j] @ molalities[self.charges > 0]
-
+                # lny[i] = - self.charges[i] ** 2 * D + np.sum(self.epsilon_matrix[:, j] * I)
         y = {}
         for i in range(len(self.substances)):
-            y[self.substances[i]] = np.exp(lny[i])
+            # y[self.substances[i]] = np.exp(lny[i])
+            y[self.substances[i]] = 10 ** lny[i]
         return y
