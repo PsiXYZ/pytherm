@@ -155,6 +155,8 @@ class ParametersPitzerNew(dict):
         bufer = []
         for line in df:
             b = line
+            while '\t' in b:
+                b = b.replace('\t', ' ')
             while '  ' in b:
                 b = b.replace('  ', ' ')
             if b[0] == ' ':
@@ -178,20 +180,25 @@ class ParametersPitzerNew(dict):
             self.__unbox_values(line.split(' '), key)
 
         for key in self.raw_parameters:
-            n_subs = self.k[key]
-            if n_subs == 2:
-                if key not in self:
-                    self[key] = {}
-                self[key] = {s: {} for s in self.raw_parameters[key]}
-            elif n_subs == 3:
-                if key not in self:
-                    self[key] = {}
-                for s1 in self.raw_parameters[key]:
-                    if s1 not in self[key]:
-                        self[key][s1] = {}
-                        for s2 in self.raw_parameters[key][s1]:
-                            if s2 not in self[key][s1]:
-                                self[key][s1][s2] = {}
+            if key not in ['B0', 'B1', 'B2', 'C0']:
+                n_subs = self.k[key]
+                if n_subs == 2:
+                    if key not in self:
+                        self[key] = {}
+                    self[key] = {s: {} for s in self.raw_parameters[key]}
+                elif n_subs == 3:
+                    if key not in self:
+                        self[key] = {}
+                    for s1 in self.raw_parameters[key]:
+                        if s1 not in self[key]:
+                            self[key][s1] = {}
+                            for s2 in self.raw_parameters[key][s1]:
+                                if s2 not in self[key][s1]:
+                                    self[key][s1][s2] = {}
+        self['CA'] = {i: {} for i in self.raw_parameters['B0']}
+        for s1 in self.raw_parameters['B0']:
+            for s2 in self.raw_parameters['B0'][s1]:
+                self['CA'][s1][s2] = np.zeros((4), dtype=np.float64)
 
     def __unbox_values(self, line, key):
         n_subs = self.k[key]
@@ -220,17 +227,69 @@ class ParametersPitzerNew(dict):
     def update_params(self, T):
         coefs = self.poly_form(T)
         for key in self.raw_parameters:
-            n_subs = self.k[key]
-            if n_subs == 2:
-                for s1 in self.raw_parameters[key]:
-                    for s2 in self.raw_parameters[key][s1]:
-                        params = self.raw_parameters[key][s1][s2]
-                        poly = coefs[:len(params)]
-                        self[key][s1][s2] = params @ poly
-            elif n_subs == 3:
-                for s1 in self.raw_parameters[key]:
-                    for s2 in self.raw_parameters[key][s1]:
-                        for s3 in self.raw_parameters[key][s1][s2]:
-                            params = self.raw_parameters[key][s1][s2][s3]
+            if key not in ['B0', 'B1', 'B2', 'C0']:
+                n_subs = self.k[key]
+                if n_subs == 2:
+                    for s1 in self.raw_parameters[key]:
+                        for s2 in self.raw_parameters[key][s1]:
+                            params = self.raw_parameters[key][s1][s2]
                             poly = coefs[:len(params)]
-                            self[key][s1][s2][s3] = params @ poly
+                            self[key][s1][s2] = params @ poly
+                elif n_subs == 3:
+                    for s1 in self.raw_parameters[key]:
+                        for s2 in self.raw_parameters[key][s1]:
+                            for s3 in self.raw_parameters[key][s1][s2]:
+                                params = self.raw_parameters[key][s1][s2][s3]
+                                poly = coefs[:len(params)]
+                                self[key][s1][s2][s3] = params @ poly
+
+        p = ['B0', 'B1', 'B2', 'C0']
+        for s1 in self.raw_parameters['B0']:
+            for s2 in self.raw_parameters['B0'][s1]:
+                for i in range(4):
+                    key = p[i]
+                    if s1 in self.raw_parameters[key]:
+                        if s2 in self.raw_parameters[key][s1]:
+                            params = self.raw_parameters[key][s1][s2]
+                            poly = coefs[:len(params)]
+                            self['CA'][s1][s2][i] = params @ poly
+
+    def is_exist(self, key, *args):
+        if len(args) == 1:
+            if args[0] in self[key]:
+                return True
+            else:
+                False
+
+        if len(args) == 3:
+            if args[0] in self[key]:
+                if args[1] in self[key][args[0]]:
+                    if args[2] in self[key][args[0]][args[1]]:
+                        return True
+                    else:
+                        return False
+                else:
+                    return False
+            else:
+                return False
+
+        if len(args) == 2:
+            if args[0] in self[key]:
+                if args[1] in self[key][args[0]]:
+                    return True
+                else:
+                    return False
+            else:
+                return False
+
+        if len(args) == 3:
+            if args[0] in self[key]:
+                if args[1] in self[key][args[0]]:
+                    if args[2] in self[key][args[0]][args[1]]:
+                        return True
+                    else:
+                        return False
+                else:
+                    return False
+            else:
+                return False

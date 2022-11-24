@@ -5,7 +5,9 @@ from . import (
 
 from .pitzer import (
     ParametersPitzer,
-    Harvie84
+    ParametersPitzerNew,
+    Harvie84,
+    pitzer_dataset
 )
 
 from .unifac import (
