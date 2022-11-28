@@ -17,7 +17,8 @@ Current features
 * Activity models:
  
   * UNIFAC and Modified UNIFAC 
-  * PITZER 
+  * PITZER
+  * SIT
 
 * EOS models:
 
@@ -60,11 +61,11 @@ Future features:
 * Activity models:
 
   * UNIQUAC 
-  * NRTL 
-  * eNRTL 
+  * NRTL
+  * Regular solution
   * LIFAC
   * LIQUAC
 
 * Calculations:
 
-  * Multicomponent equilibrium calculations using PITZER
+  * Multicomponent equilibrium calculations using PITZER ans SIT models
