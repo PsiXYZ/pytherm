@@ -37,7 +37,7 @@ class SIT:
     epsilon_matrix = None
 
     def __init__(self, ph: dict, parameters=sit_parameters):
-        self.substances = np.array(list(ph.keys()))
+        self.substances = np.array(ph)
         self.charges = np.array(extract_charges(ph))
         self.cations = self.substances[self.charges > 0]
         self.anions = self.substances[self.charges < 0]
@@ -52,33 +52,40 @@ class SIT:
             print("SIT model: zero values in epsilon_matrix")
 
     def get_y(self, ph: dict[str, float], T=298) -> dict[str, float]:
-        """Calculate activity coefficients
+            """Calculate activity coefficients
 
-        Parameters
-        ----------
-        ph: dict[str, float]
-            Input dictionary
-        T: float
-            Temperature, [K], defaults to 298
-        Returns
-        -------
-        dict[str, float]
-            activity coefficients
-        """
-        molalities = np.array(list(ph.values()))
-        I = get_I(molalities, charges=self.charges)
-        sqrt_I = math.sqrt(I)
-        D = 0.509 * sqrt_I / (1 + 1.5 * sqrt_I)
+            Parameters
+            ----------
+            ph: dict[str, float]
+                Input dictionary
+            T: float
+                Temperature, [K], defaults to 298
+            Returns
+            -------
+            dict[str, float]
+                activity coefficients
+            """
+            molalities = np.array(list(ph.values()))
+            I = get_I(molalities, charges=self.charges)
+            sqrt_I = math.sqrt(I)
+            D = 0.509 * sqrt_I / (1 + 1.5 * sqrt_I)
 
-        lny = np.zeros((len(self.substances)))
+            lny = np.zeros((len(self.substances)))
+            for i in range(len(self.substances)):
+                if self.charges[i] > 0:
+                    j = np.where(self.cations == self.substances[i])[0][0]
+                    lny[i] = - self.charges[i] ** 2 * D + self.epsilon_matrix[j, :] @ molalities[self.charges < 0]
+                else:
+                    j = np.where(self.anions == self.substances[i])[0][0]
+                    lny[i] = - self.charges[i] ** 2 * D + self.epsilon_matrix[:, j] @ molalities[self.charges > 0]
+            y = {}
+            for i in range(len(self.substances)):
+                y[self.substances[i]] = 10 ** lny[i]
+            return y
+
+    def get_a(self, ph: dict[str, float], T=298):
+        y = self.get_y(ph, T)
+        a = []
         for i in range(len(self.substances)):
-            if self.charges[i] > 0:
-                j = np.where(self.cations == self.substances[i])[0][0]
-                lny[i] = - self.charges[i] ** 2 * D + self.epsilon_matrix[j, :] @ molalities[self.charges < 0]
-            else:
-                j = np.where(self.anions == self.substances[i])[0][0]
-                lny[i] = - self.charges[i] ** 2 * D + self.epsilon_matrix[:, j] @ molalities[self.charges > 0]
-        y = {}
-        for i in range(len(self.substances)):
-            y[self.substances[i]] = 10 ** lny[i]
-        return y
+            a.append(ph[a] * y[a])
+        return np.array(a)
