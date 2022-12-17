@@ -34,6 +34,12 @@ class EquilibriumSystem:
 
     c_0 = None
 
+    def __init__(self, subs, reactions):
+        self.set_reactions(reactions)
+        for s in subs:
+            if not s in self.substances:
+                self.substances.append(s)
+
     def set_reactions(self, reactions: list[ChemicalReaction]):
         self.reactions = reactions
         substances, self.reaction_matrix = make_reaction_matrix(
@@ -65,7 +71,7 @@ class EquilibriumSystem:
     def set_activity_model(self, activity_model):
         self.activity_model = activity_model
 
-    def find_equilibrium(self, ph):
+    def set_concentrations(self, ph):
         concentrations_dict = {}
         for s in self.substances:
             concentrations_dict[s] = 0
@@ -78,23 +84,29 @@ class EquilibriumSystem:
 
     def fi(self, ksi):
         pr = self.get_pr(ksi)
-        res = np.abs(np.log(pr) - self.log_k)
+        res = np.abs(np.log10(pr) - self.log_k)
         return res
 
     def get_pr(self, ksi):
         pr = np.full(len(self.log_k), 0.0)  # реакционные произведения
         concentrations = self.get_concentrations(ksi)  # кол-ва вещества i
-
+        conc_dict = self.conc_to_dict(concentrations)
+        activities = self.activity_model.get_a(conc_dict)
         for i in range(len(self.log_k)):
-            activities = self.activity_model.get_a(concentrations)
-            s = np.power(activities, self.reaction_matrix[i])
+
+            s = np.power(activities[:len(self.reaction_matrix[0])], self.reaction_matrix[i])
+            for j in range(len(s)):
+                if s[j] == np.inf:
+                    s[j] = 0
             pr[i] = np.prod(s)
         return pr
 
     def get_concentrations(self, ksi):
         concentrations = np.full(len(self.c_0), 0.0)
-        for i in range(len(self.c_0)):
+        for i in range(len(self.reaction_matrix[0])):
             concentrations[i] = self.reaction_matrix[:, i] @ ksi
+        # for i in range(len(self.reaction_matrix), len(self.c_0)):
+        #     concentrations[i] = 0
         return self.c_0 + concentrations
 
     def get_bounds(self, ksi, reaction_index):
@@ -102,19 +114,103 @@ class EquilibriumSystem:
         p_ksi[reaction_index] = 0
         c = self.get_concentrations(p_ksi)
         vals = []
-        for i in range(len(self.c_0)):
+        for i in range(len(self.reaction_matrix[0])):
             if self.reaction_matrix[reaction_index][i] > 0:
                 buf = c[i] / self.reaction_matrix[reaction_index][i]
                 vals.append(- buf)
         r_l = max(vals)
 
         vals = []
-        for i in range(len(self.c_0)):
+        for i in range(len(self.reaction_matrix[0])):
             if self.reaction_matrix[reaction_index][i] < 0:
                 buf = c[i] / self.reaction_matrix[reaction_index][i]
                 vals.append(- buf)
         r_r = min(vals)
         return r_l, r_r
+
+    def conc_to_dict(self, conc):
+        d = {}
+        for i in range(len(self.substances)):
+            d[self.substances[i]] = conc[i]
+        return d
+
+
+class EquilibriumSolver:
+    eq_sys: EquilibriumSystem
+    k_lim: float
+    fabs: float
+    ftol: float
+    ksi: list[float]
+
+    def __init__(self,
+                 eq_sys: EquilibriumSystem,
+                 k_lim=10,
+                 fabs=1e-5,
+                 ftol=1e-12,
+                 ):
+        self.eq_sys = eq_sys
+        self.k_lim = k_lim
+        self.fabs = fabs
+        self.ftol = ftol
+
+    def equilibrate(self):
+        n_reactions = len(self.eq_sys.log_k)
+        for i in range(n_reactions):
+            pass
+
+        ksi = np.full(n_reactions, 0, dtype=float)
+        while (1):
+            f = self.eq_sys.fi(ksi)
+            print("F = ", f)
+            print("ksi = ", ksi)
+
+            if np.sum(f) < self.fabs:
+                self.ksi = ksi
+                break
+
+            # поиск реакции с мах f
+            v = 0
+            ri = 0
+            for i in range(len(f)):
+                if f[i] > v:
+                    v = f[i]
+                    ri = i
+
+            p_ksi = ksi
+            p_ksi[ri] = 0
+            left_bound, right_bound = self.eq_sys.get_bounds(p_ksi, ri)
+            rs = np.array((left_bound, 0, right_bound))
+
+            # начало оптимизации
+            vals_u = np.array((0.0, 0.0))
+            while (1):
+                rs[1] = (rs[0] + rs[2]) / 2
+                p_ksi[ri] = rs[1]
+                # print("F = ", fi(p_ksi))
+                # print("Ksi = ", p_ksi)
+                pr = self.eq_sys.get_pr(p_ksi)
+                K = self.eq_sys.log_k
+
+                res = (K - np.log10(pr))
+                vals_u[1] = vals_u[0]
+                vals_u[0] = self.eq_sys.fi(p_ksi)[ri]
+
+                if res[ri] < 0:
+                    rs[2] = rs[1]
+                else:
+                    rs[0] = rs[1]
+
+                if vals_u[0] == 0:
+                    ksi[ri] = rs[1]
+                    break
+                if vals_u[0] < self.fabs / 10:
+                    ksi[ri] = rs[1]
+                    break
+                tol = np.abs((vals_u[0] - vals_u[1]) / vals_u[0])
+                if tol < self.ftol:
+                    ksi[ri] = rs[1]
+                    break
+
 
 def make_reaction_matrix(reactions: list[ChemicalReaction]):
     substances = []
