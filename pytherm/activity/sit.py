@@ -75,9 +75,11 @@ class SIT:
                 if self.charges[i] > 0:
                     j = np.where(self.cations == self.substances[i])[0][0]
                     lny[i] = - self.charges[i] ** 2 * D + self.epsilon_matrix[j, :] @ molalities[self.charges < 0]
-                else:
+                elif self.charges[i] < 0:
                     j = np.where(self.anions == self.substances[i])[0][0]
                     lny[i] = - self.charges[i] ** 2 * D + self.epsilon_matrix[:, j] @ molalities[self.charges > 0]
+                else:
+                    lny[i] = 0
             y = {}
             for i in range(len(self.substances)):
                 y[self.substances[i]] = 10 ** lny[i]
@@ -87,5 +89,5 @@ class SIT:
         y = self.get_y(ph, T)
         a = []
         for i in range(len(self.substances)):
-            a.append(ph[a] * y[a])
+            a.append(ph[self.substances[i]] * y[self.substances[i]])
         return np.array(a)
