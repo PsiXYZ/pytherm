@@ -1,20 +1,28 @@
-"""_summary_
+"""This module contains classes and functions for equilibrium calculations
 """
 
 import numpy as np
+from .stoichiometry import str_to_reaction
 
 
 class ChemicalReaction:
+    """Class for chemical reaction representation
+    """
     def __init__(self,
-                 log_k=None,
+                 log10_k=None,
                  reaction_vector=None,
                  substances=None,
                  reaction_str=None
                  ) -> None:
-        self.log_k = log_k
-        self.reaction_vector = reaction_vector
-        self.substances = substances
-        self.reaction_str = reaction_str
+
+        self.log10_k = log10_k
+        if reaction_str is None:
+            self.reaction_vector = reaction_vector
+            self.substances = substances
+            self.reaction_str = reaction_str
+        else:
+            self.reaction_str = reaction_str
+            self.reaction_vector, self.substances = str_to_reaction(reaction_str)
 
     def __str__(self) -> str:
         return self.reaction_str
@@ -56,7 +64,7 @@ class EquilibriumSystem:
 
         log_k = []
         for reaction in self.reactions:
-            log_k.append(reaction.log_k)
+            log_k.append(reaction.log10_k)
         self.log_k = np.array(log_k)
 
     def set_solids(self, reactions: list[ChemicalReaction]):

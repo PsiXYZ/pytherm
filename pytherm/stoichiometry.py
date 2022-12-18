@@ -1,4 +1,4 @@
-"""VIP module
+"""Module for stoichiometric operations
 """
 import numpy as np
 
@@ -167,6 +167,33 @@ def reaction_to_str(reaction_vector, substances, sep='*'):
         elif reaction_vector[i] > 0:
             s2 += str(int(abs(reaction_vector[i]))) + sep + substances[i] + " + "
     return s1[:-2] + "= " + s2[:-2]
+
+
+def str_to_reaction(reaction: str):
+    """Convert string to reaction vector and substances vector
+
+    Parameters
+    ----------
+    reaction
+
+    Returns
+    -------
+
+    """
+    left, right = reaction.split(' = ')[0], reaction.split(' = ')[1]
+    left = left.split(' + ')
+    right = right.split(' + ')
+
+    reaction_vector = []
+    substances = []
+    for i in left:
+        reaction_vector.append(- int(i.split('*')[0]))
+        substances.append(i.split('*')[1])
+    for i in right:
+        reaction_vector.append(int(i.split('*')[0]))
+        substances.append(i.split('*')[1])
+
+    return reaction_vector, substances
 
 
 def extract_charges(substances: list[str]):
