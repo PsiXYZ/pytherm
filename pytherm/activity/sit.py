@@ -27,21 +27,24 @@ class SIT:
     ----------
     ph: dict
         Phase dict for parameters initialization
-    parameters : list
+    parameters: list
         SIT parameters list ex.: [['Na_+1', 'Cl_-1', 0.03]]
+    dict_mode: bool
+        Dict or array mode, defaults to False
     """
     substances = None
     charges = None
     cations = None
     anions = None
     epsilon_matrix = None
-
-    def __init__(self, ph: dict, parameters=sit_parameters):
+    dict_mode: bool
+    def __init__(self, ph: dict, parameters=sit_parameters, dict_mode=False):
         self.substances = np.array(ph)
         self.charges = np.array(extract_charges(ph))
         self.cations = self.substances[self.charges > 0]
         self.anions = self.substances[self.charges < 0]
         self.epsilon_matrix = np.zeros((len(self.cations), len(self.anions)))
+        self.dict_mode = dict_mode
 
         for i in range(len(self.cations)):
             for j in range(len(self.anions)):
@@ -51,7 +54,8 @@ class SIT:
         if .0 in self.epsilon_matrix:
             print("SIT model: zero values in epsilon_matrix")
 
-    def get_y(self, ph: dict[str, float], T=298) -> dict[str, float]:
+
+    def get_y(self, ph, T=298):
             """Calculate activity coefficients
 
             Parameters
@@ -65,7 +69,11 @@ class SIT:
             dict[str, float]
                 activity coefficients
             """
-            molalities = np.array(list(ph.values()))
+            if self.dict_mode:
+                molalities = np.array(list(ph.values()))
+            else:
+                molalities = np.array(ph)
+
             I = get_I(molalities, charges=self.charges)
             sqrt_I = math.sqrt(I)
             D = 0.509 * sqrt_I / (1 + 1.5 * sqrt_I)
@@ -80,14 +88,27 @@ class SIT:
                     lny[i] = - self.charges[i] ** 2 * D + self.epsilon_matrix[:, j] @ molalities[self.charges > 0]
                 else:
                     lny[i] = 0
-            y = {}
-            for i in range(len(self.substances)):
-                y[self.substances[i]] = 10 ** lny[i]
-            return y
+            if self.dict_mode:
+                y = {}
+                for i in range(len(self.substances)):
+                    y[self.substances[i]] = 10 ** lny[i]
+                return y
+            else:
+                y = []
+                for i in range(len(self.substances)):
+                    y.append(10 ** lny[i])
+                return np.array(y)
 
-    def get_a(self, ph: dict[str, float], T=298):
+
+    def get_a(self, ph, T=298):
         y = self.get_y(ph, T)
-        a = []
-        for i in range(len(self.substances)):
-            a.append(ph[self.substances[i]] * y[self.substances[i]])
-        return np.array(a)
+        if self.dict_mode:
+            a = {}
+            for i in y:
+                a[i] = ph[i] * y[i]
+            return a
+        else:
+            a = []
+            for i in range(len(self.substances)):
+                a.append(ph[i] * y[i])
+            return np.array(a)

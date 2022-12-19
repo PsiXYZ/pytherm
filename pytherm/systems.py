@@ -98,8 +98,8 @@ class EquilibriumSystem:
     def get_pr(self, ksi):
         pr = np.full(len(self.log_k), 0.0)  # реакционные произведения
         concentrations = self.get_concentrations(ksi)  # кол-ва вещества i
-        conc_dict = self.conc_to_dict(concentrations)
-        activities = self.activity_model.get_a(conc_dict)
+        # conc_dict = self.conc_to_dict(concentrations)
+        activities = self.activity_model.get_a(concentrations)
         for i in range(len(self.log_k)):
 
             s = np.power(activities[:len(self.reaction_matrix[0])], self.reaction_matrix[i])

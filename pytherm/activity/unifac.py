@@ -46,6 +46,9 @@ References
 """
 from math import log, exp, e
 from typing import Callable
+
+import numpy as np
+
 from pytherm import constants
 from .db import unifac as datasets
 from .db.unifac import ParametersUNIFAC, SubstancesUNIFAC
@@ -89,14 +92,17 @@ class UNIFAC(ActivityModel):
     {'n-hexane': 1.514766775270851, 'butanone-2': 1.4331647782163541}
     """
     get_comb: Callable
+    dict_mode: bool
 
     def __init__(self,
                  dataset: ParametersUNIFAC,
-                 substances: SubstancesUNIFAC):
+                 substances: SubstancesUNIFAC,
+                 dict_mode=False):
         self.unifac_mode = dataset['type']
         self.interaction_matrix = dataset['res']
         self.t_groups = dataset['comb']
         self.phase = substances
+        self.dict_mode = dict_mode
 
         if self.unifac_mode == 'modified':
             self.get_comb = self.get_comb_mod
@@ -108,7 +114,7 @@ class UNIFAC(ActivityModel):
         self.__check_inter()
 
     def get_y(self,
-              system: dict[str, float],
+              system,
               T=298) -> dict[str, float]:
         r"""Calculate activity coefficietns for system dict
 
@@ -117,7 +123,7 @@ class UNIFAC(ActivityModel):
 
         Parameters
         ----------
-        system : dict[str, float]
+        system
             Input dictionary {"Substance name": concentration}
         T : int, optional
             Temperature, [K], by default 298
@@ -127,17 +133,26 @@ class UNIFAC(ActivityModel):
         dict[str, float]
             Activity coefficients
         """
-        for i in system:
-            self.phase[i].x = system[i]
+        keys = list(self.phase.keys())
+
+        if self.dict_mode:
+            for i in system:
+                self.phase[i].x = system[i]
+        else:
+            for i in range(len(self.phase)):
+                self.phase[keys[i]].x = system[i]
 
         comb = self.get_comb(self.phase)
         res = self.get_res(self.phase, T)
         y = {}
-        for i in system:
-            # print(i, e ** comb[i], e ** res[i])
+        for i in keys:
             lny = comb[i] + res[i]
             y[i] = e ** lny
-        return y
+
+        if self.dict_mode:
+            return y
+        else:
+            return np.array(list(y.values()))
 
     def get_comb_original(self, inp: SubstancesUNIFAC, z=10) -> dict[str, float]:
         r"""Calculate combinatorial component :math:`\ln\gamma_i^c` using original UNIFAC equation

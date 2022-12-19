@@ -16,10 +16,13 @@ class Pitzer:
     db: datasets.ParametersPitzerNew
     T_model = -1
 
-    def __init__(self, ph, db=datasets.pitzer_dataset, get_A=el.get_A) -> None:
+    dict_mode: bool
+
+    def __init__(self, ph, db=datasets.pitzer_dataset, get_A=el.get_A, dict_mode=False) -> None:
         self.get_A = get_A
         self.charges = np.array(extract_charges(list(ph.keys())))
         self.db = db
+        self.dict_mode = dict_mode
 
         subs = np.array(list(ph.keys()))
         self.cations = subs[self.charges > 0]
@@ -28,10 +31,16 @@ class Pitzer:
         self.substances = subs
         self.charges_dict = {self.substances[i]: self.charges[i] for i in range(len(self.substances))}
 
-    def get_y(self, ph: dict):
-        y = {}
-        for s in ph:
-            y[s] = np.exp(self.grad(ph, s))
+    def get_y(self, ph):
+        if self.dict_mode:
+            y = {}
+            for s in ph:
+                y[s] = np.exp(self.grad(ph, s))
+        else:
+            y = []
+            for s in self.substances:
+                y.append(np.exp(self.grad(ph, s)))
+                y = np.array(y)
         return y
 
     def grad(self, ph, s, dm=1e-8):
