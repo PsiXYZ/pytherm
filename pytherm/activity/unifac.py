@@ -28,9 +28,12 @@ There are some ready to use :obj:`.ParametersUNIFAC` objects in :obj:`.unifac.da
     * :obj:`.unifac.datasets.VLE` (:obj:`.db.unifac.parameters.vle.VLE`) [1]_
     * :obj:`.unifac.datasets.LLE` (:obj:`.db.unifac.parameters.vle.LLE`) [2]_
     * :obj:`.unifac.datasets.INF` (:obj:`.db.unifac.parameters.vle.INF`) [3]_
+    * :obj:`.unifac.datasets.BIO2016_1` (:obj:`.db.unifac.parameters.vle.BIO2016_1`) [6]_
+    * :obj:`.unifac.datasets.BIO2016_2` (:obj:`.db.unifac.parameters.vle.BIO2016_2`) [6]_
 * Modified UNIFAC:
     * :obj:`.unifac.datasets.DOR` (:obj:`.db.unifac.parameters.vle.DOR`) [4]_
     * :obj:`.unifac.datasets.NIST2015` (:obj:`.db.unifac.parameters.vle.NIST2015`) [5]_
+
 
 References
 ----------
@@ -42,6 +45,7 @@ References
 .. [4] DOR, published DDB parameters, 2021 JAN,
     https://www.ddbst.com/PublishedParametersUNIFACDO.html
 .. [5] Kang2015, DOI: https://doi.org/10.1016/j.fluid.2014.12.042
+.. [6] Bessa2016, DOI: https://doi.org/10.1016/j.fluid.2016.05.020
 
 """
 from math import log, exp, e
