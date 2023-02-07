@@ -8,4 +8,6 @@ from .parameters import (
     NIST2015,
     VLE,
     PSRK,
+    BIO2016_1,
+    BIO2016_2,
 )

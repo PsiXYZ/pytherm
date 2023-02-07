@@ -18,4 +18,6 @@ from .unifac import (
     LLE,
     NIST2015,
     VLE,
+    BIO2016_1,
+    BIO2016_2,
 )
