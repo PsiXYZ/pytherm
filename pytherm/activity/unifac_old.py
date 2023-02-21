@@ -43,12 +43,12 @@ class Unifac:
 
     def get_y(self,
               inp: dict[str, float],
-              temperature=298) -> dict[str, float]:
+              T=298) -> dict[str, float]:
         """Calculate activity coefficient for input dict
 
         Args:
             inp (dict[str, float]): input dictionary {name: conentration}
-            temperature (optional): Temperature in K. Defaults to 298.
+            T (optional): Temperature in K. Defaults to 298.
 
         Returns:
             dict[str, float]: activity coefficient for inp substances
@@ -57,7 +57,7 @@ class Unifac:
             self.phase[i].x = inp[i]
 
         comb = self.get_comb(self.phase)
-        res = self.get_res(self.phase, temperature)
+        res = self.get_res(self.phase, T)
         y = {}
         for i in inp:
             # print(i, e ** comb[i], e ** res[i])
@@ -286,7 +286,7 @@ class Unifac:
         return ph
 
     def get_ge(self, inp, t=298, n=1):
-        y = self.get_y(inp, temperature=t)
+        y = self.get_y(inp, T=t)
         ge = 0
         for sub in inp:
             ge += n*inp[sub]*log(y[sub])
