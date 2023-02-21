@@ -328,7 +328,7 @@ def find_lle2(
     f = minimize2(get_loga, bounds)
     if f[0]:
         if notifier is not None:
-            lle_notifier(f[2], phase1, phase2)
+            notifier(f[2], phase1, phase2)
         return True
     else:
         return False
