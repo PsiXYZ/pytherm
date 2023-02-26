@@ -527,3 +527,59 @@ class UNIFAC(ActivityModel):
 
     def change_t2(self, i, j, vals):
         self.interaction_matrix[i - 1][j - 1] = vals
+
+
+# class UNIFAC_W(ActivityModel):
+#     def __init__(self, uf: UNIFAC, Mw):
+#         self.Mw = Mw
+#         self.uf = uf
+#
+#     def get_y(self, system, T=298.0):
+#         keys = list(system.keys())
+#
+#         w_M = 0
+#         for i in keys:
+#             w_M += system[i] / self.Mw[i]
+#
+#         system_x = {}
+#         for i in keys:
+#             system_x[i] = (system[i] / self.Mw[i]) / w_M
+#
+#         y = self.uf.get_y(system_x, T)
+#
+#         y_w = {}
+#         for i in keys:
+#             y_w[i] = y[i] / (self.Mw[i] * w_M)
+#
+#         return y_w
+
+
+class UNIFAC_W(UNIFAC):
+    def __init__(
+            self,
+            dataset: ParametersUNIFAC,
+            substances: SubstancesUNIFAC,
+            Mw,
+            dict_mode=False
+    ):
+        self.Mw = Mw
+        super().__init__(dataset=dataset, substances=substances, dict_mode=dict_mode)
+
+    def get_y(self, system, T=298.0):
+        keys = list(system.keys())
+
+        w_M = 0
+        for i in keys:
+            w_M += system[i] / self.Mw[i]
+
+        system_x = {}
+        for i in keys:
+            system_x[i] = (system[i] / self.Mw[i]) / w_M
+
+        y = super().get_y(system_x, T)
+
+        y_w = {}
+        for i in keys:
+            y_w[i] = y[i] / (self.Mw[i] * w_M)
+
+        return y_w
