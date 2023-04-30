@@ -1,4 +1,5 @@
-from pytherm import base, stoichiometry, gaseq
+from pytherm import base, gaseq
+from pytherm import stoichiometry as sm
 from pytherm import gaseq as gaseq2
 
 
