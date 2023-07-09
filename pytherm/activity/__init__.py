@@ -10,7 +10,6 @@ Activity Classes
 .. autoclass:: SIT
 """
 
-from .unifac_old import Unifac
 from .unifac import UNIFAC, UNIFAC_W
 from .pitzer import Pitzer
 from .sit import SIT

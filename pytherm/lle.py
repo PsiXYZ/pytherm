@@ -1,6 +1,6 @@
 from math import log, log10
 from pytherm import constants
-from .solver import minimize, minimize2
+from .solver import minimize
 from pytherm.activity.activity_model import ActivityModel
 
 R = constants.R
@@ -120,39 +120,73 @@ def lle_notifier(f, ph1, ph2):
         "s", round(s1, n_vals), round(s2, n_vals)))
 
 
-def find_lle(phase1: dict[str, float],
-             phase2: dict[str, float],
-             activity_model,
-             T=298,
-             solver=minimize2,
-             notifier=lle_notifier):
+def calculate_solubility(activity_model: ActivityModel,
+                         comp_name,
+                         T: float,
+                         T_m: float,
+                         H_m: float,
+                         bounds=(1e-20, 0.99),
+                         ftol=1e-18,
+                         fabs=1e-10):
+    phase = {}
+    phase[comp_name[0]] = 1
+    phase[comp_name[1]] = 0
+    lnx = H_m / R * (1 / T_m - 1 / T)
+
+    a = bounds[0]
+    b = bounds[1]
+
+    def f(x):
+        phase[comp_name[1]] = x
+        phase[comp_name[0]] = 1 - x
+        y = activity_model.get_y(phase, T=T)
+        return (log(phase[comp_name[1]] * y[comp_name[1]]) - lnx)
+
+    while (1):
+        x = (a + b) / 2
+        if f(x) * f(a) < 0:
+            b = x
+        elif f(x) * f(b) < 0:
+            a = x
+        if abs(b - a) < ftol or abs(f(x)) < fabs:
+            break
+    return x
+
+
+def find_lle(
+        phase1: dict[str, float],
+        phase2,
+        activity_model,
+        solver=minimize,
+        T=298.0,
+        min_ksi=1e-8,
+        notifier=lle_notifier
+):
     # ph1 -> ph2
-    n1 = 10  # initial amount of phase 1
-    n2 = 10  # initial amount of phase 2
-    min_ksi = 1e-08  # minimal ksi value
     components = list(phase1.keys())  # components list
     comp_number = len(components)  # number of components
-    bounds = []  # ksi bounds for each component
 
+    if phase2 is None:
+        phase2 = {}
+        for i in phase1:
+            phase2[i] = 0
+
+        key = sorted(phase1, key=phase1.get)[-2]
+        conc = phase1[key]
+        phase2[key] = 1
+        for j in phase1:
+            phase1[j] = phase1[j] / (1 - conc)
+        phase1[key] = 0
+
+    bounds = []  # ksi bounds for each component
     for i in range(comp_number):
         bounds.append([0, 0])
 
-    """Calculate initial amount of substance in each phase"""
     n0_1 = [0] * comp_number
     n0_2 = [0] * comp_number
-    # for i in range(comp_number):
-    #     if phase1[components[i]] == 0:
-    #         n0_1[i] = 0
-    #         n0_2[i] = phase2[components[i]] * n2
-    #         bounds.append([- phase2[components[i]] * n2 + min_ksi, - min_ksi])
-    #     else:
-    #         n0_1[i] = phase1[components[i]] * n1
-    #         n0_2[i] = phase2[components[i]] * n2
-    #         bounds.append([min_ksi, phase1[components[i]] * n1 - min_ksi])
-
     for i in range(comp_number):
-        n0_1[i] = phase1[components[i]] * n1
-        n0_2[i] = phase2[components[i]] * n2
+        n0_1[i] = phase1[components[i]]
+        n0_2[i] = phase2[components[i]]
         bounds[i] = [- n0_2[i] + min_ksi, n0_1[i] - min_ksi]
 
     """Genereate reaction matrix for ph1 -> ph2 """
@@ -199,136 +233,6 @@ def find_lle(phase1: dict[str, float],
     if f[0]:
         if notifier is not None:
             lle_notifier(f[2], phase1, phase2)
-        return True
+        return phase1, phase2
     else:
-        return False
-
-
-def calculate_solubility(activity_model: ActivityModel,
-                         comp_name,
-                         T: float,
-                         T_m: float,
-                         H_m: float,
-                         bounds=(1e-20, 0.99),
-                         ftol=1e-18,
-                         fabs=1e-10):
-    phase = {}
-    phase[comp_name[0]] = 1
-    phase[comp_name[1]] = 0
-    lnx = H_m / R * (1 / T_m - 1 / T)
-
-    a = bounds[0]
-    b = bounds[1]
-
-    def f(x):
-        phase[comp_name[1]] = x
-        phase[comp_name[0]] = 1 - x
-        y = activity_model.get_y(phase, T=T)
-        return (log(phase[comp_name[1]] * y[comp_name[1]]) - lnx)
-
-    while (1):
-        x = (a + b) / 2
-        if f(x) * f(a) < 0:
-            b = x
-        elif f(x) * f(b) < 0:
-            a = x
-        if abs(b - a) < ftol or abs(f(x)) < fabs:
-            break
-    return x
-
-
-def find_lle2(
-        phase1: dict[str, float],
-        phase2: dict[str, float],
-        activity_model,
-        T=298,
-        min_ksi=1e-8,
-        notifier=lle_notifier
-):
-    # ph1 -> ph2
-    components = list(phase1.keys())  # components list
-    comp_number = len(components)  # number of components
-
-    n_0 = [phase1[i] for i in phase1]
-
-    n0_1 = [0] * comp_number
-    n0_1[0] = phase1[components[0]]
-    n0_1[1] = 0
-    n0_1[2] = phase1[components[2]] / 2
-
-    n0_2 = [0] * comp_number
-    n0_2[0] = 0
-    n0_2[1] = phase1[components[1]]
-    n0_2[2] = phase1[components[2]] / 2
-
-
-
-    n1 = sum(n0_1)  # initial amount of phase 1
-    n2 = sum(n0_2)  # initial amount of phase 2
-
-    bounds = []  # ksi bounds for each component
-
-    for i in range(comp_number):
-        bounds.append([0, 0])
-
-    """Calculate initial amount of substance in each phase"""
-    # for i in range(comp_number):
-    #     if phase1[components[i]] == 0:
-    #         n0_1[i] = 0
-    #         n0_2[i] = phase2[components[i]] * n2
-    #         bounds.append([- phase2[components[i]] * n2 + min_ksi, - min_ksi])
-    #     else:
-    #         n0_1[i] = phase1[components[i]] * n1
-    #         n0_2[i] = phase2[components[i]] * n2
-    #         bounds.append([min_ksi, phase1[components[i]] * n1 - min_ksi])
-
-    for i in range(comp_number):
-        bounds[i] = [- n0_2[i] + min_ksi, n0_1[i] - min_ksi]
-
-    """Genereate reaction matrix for ph1 -> ph2 """
-    r_mat = []
-    for i in range(comp_number):
-        r_mat.append([0] * comp_number)
-    for i in range(comp_number):
-        r_mat[i][i] = 1
-
-    def get_loga(ksi):
-        n1 = 0
-        n2 = 0
-        n_1 = [0] * comp_number
-        n_2 = [0] * comp_number
-        a1 = [0] * comp_number
-        a2 = [0] * comp_number
-        """calculate n for each component using ksi"""
-        for i in range(comp_number):
-            n_1[i] = n0_1[i] - ksi[i]
-            n_2[i] = n0_2[i] + ksi[i]
-
-        """calculate amount of phase"""
-        for i in range(comp_number):
-            n1 += n_1[i]
-            n2 += n_2[i]
-
-        """calculate molar fraction, х"""
-        for i in range(comp_number):
-            phase1[components[i]] = n_1[i] / n1
-            phase2[components[i]] = n_2[i] / n2
-        y1 = activity_model.get_y(phase1, T=T)
-        y2 = activity_model.get_y(phase2, T=T)
-        for i in range(comp_number):
-            a1[i] = phase1[components[i]] * y1[components[i]]
-            a2[i] = phase2[components[i]] * y2[components[i]]
-
-        """calculate log_a for each component"""
-        lg = [0] * comp_number
-        for i in range(comp_number):
-            lg[i] = log(a2[i] / a1[i])
-        return lg
-
-    f = minimize2(get_loga, bounds)
-    if f[0]:
-        if notifier is not None:
-            notifier(f[2], phase1, phase2)
-        return True
-    else:
-        return False
+        return None, None
