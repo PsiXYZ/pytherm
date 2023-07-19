@@ -157,7 +157,9 @@ class Substance:
     --------
     >>> hexane = Substance(1, {'CH3': 2, 'CH2': 4})
     """
-
+    r: float
+    q: float
+    x: float
     def __init__(self, x: float, groups: dict[str, float]):
 
         if x is not None:

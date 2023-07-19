@@ -97,6 +97,9 @@ class UNIFAC(ActivityModel):
     """
     get_comb: Callable
     dict_mode: bool
+    phase: SubstancesUNIFAC
+    groups: list
+    T = -1.0
 
     def __init__(self,
                  dataset: ParametersUNIFAC,
@@ -116,10 +119,38 @@ class UNIFAC(ActivityModel):
             raise Warning("unknow unifac mode")
 
         self.__check_inter()
+        self.__calculate_vdw()
 
-    def get_y(self,
-              system,
-              T=298) -> dict[str, float]:
+        gr = []
+        for i in substances:
+            for j in substances[i].groups:
+                if j not in gr:
+                    gr.append(j)
+        self.groups = gr
+
+        gr_id = []
+        for gr in self.groups:
+            if self.t_groups[gr].id not in gr_id:
+                gr_id.append(self.t_groups[gr].id)
+        psi = {}
+        for id1 in gr_id:
+            b = {}
+            if id1 not in psi:
+                psi[id1] = {}
+            for id2 in gr_id:
+                b[id2] = 0
+            psi[id1] = b
+            self.psi = psi
+
+            gamma_gr_pure = {}
+            for comp in self.phase:
+                gamma_gr_pure[comp] = {}
+            for comp in self.phase:
+                for gr in self.groups:
+                    gamma_gr_pure[comp][gr] = 0
+            self.gamma_gr_pure = gamma_gr_pure
+
+    def get_y(self, system, T=298):
         r"""Calculate activity coefficietns for system dict
 
         .. math::
@@ -158,7 +189,7 @@ class UNIFAC(ActivityModel):
         else:
             return np.array(list(y.values()))
 
-    def get_comb_original(self, inp: SubstancesUNIFAC, z=10) -> dict[str, float]:
+    def get_comb_original(self, inp: SubstancesUNIFAC) -> dict[str, float]:
         r"""Calculate combinatorial component :math:`\ln\gamma_i^c` using original UNIFAC equation
 
         .. math::
@@ -178,7 +209,7 @@ class UNIFAC(ActivityModel):
         Parameters
         ----------
         inp : SubstancesUNIFAC
-            SubstancesUNIFAC object with defined concentrations 
+            SubstancesUNIFAC object with defined concentrations
         z : int, optional
             Coordination number, by default 10
 
@@ -188,54 +219,27 @@ class UNIFAC(ActivityModel):
             Returns lny_c {"Substance name": lny_c}
         """
 
-        def get_r(name):
-            r = 0
-            for i in inp[name].groups:
-                r += self.t_groups[i].R * inp[name].groups[i]
-            return r
+        phi = {}
+        s = 0
+        for comp in inp:
+            s += self.phase[comp].r * self.phase[comp].x
+        for comp in inp:
+            phi[comp] = self.phase[comp].r / s
 
-        def get_q(name):
-            q = 0
-            for i in inp[name].groups:
-                q += self.t_groups[i].Q * inp[name].groups[i]
-            return q
-
-        def get_l(name):
-            return z / 2 * (get_r(name) - get_q(name)) - (get_r(name) - 1)
-
-        def get_f(name):
-            s = 0
-            for j in inp:
-                rj = get_r(j)
-                s += rj * inp[j].x
-            ri = get_r(name)
-            return ri * inp[name].x / s
-
-        def get_t(name):
-            s = 0
-            for j in inp:
-                qj = get_q(j)
-                s += qj * inp[j].x
-            qi = get_q(name)
-            return qi * inp[name].x / s
+        theta = {}
+        s = 0
+        for comp in inp:
+            s += self.phase[comp].q * self.phase[comp].x
+        for comp in inp:
+            theta[comp] = self.phase[comp].q / s
 
         rez = {}
         for i in inp:
-            qi = get_q(i)
-            li = get_l(i)
-            fi = get_f(i)
-            ti = get_t(i)
-            xi = inp[i].x
-
-            s = 0
-            for j in inp:
-                s += inp[j].x * get_l(j)
-
-            lny = log(fi / xi) + z / 2 * qi * log(ti / fi) + li - fi / xi * s
-            rez[i] = lny
+            rez[i] = 1 - phi[i] + log(phi[i]) - 5 * self.phase[i].q * (
+                        1 - phi[i] / theta[i] + log(phi[i] / theta[i]))
         return rez
 
-    def get_comb_mod(self, inp: SubstancesUNIFAC, z=10) -> dict[str, float]:
+    def get_comb_mod(self, inp: SubstancesUNIFAC) -> dict[str, float]:
         r"""Calculate combinatorial component :math:`\ln\gamma_i^c` using modified equation
 
         .. math::
@@ -264,56 +268,33 @@ class UNIFAC(ActivityModel):
             Returns lny_c {"Substance name": lny_c}
         """
 
-        def get_r(name):
-            r = 0
-            for i in inp[name].groups:
-                r += self.t_groups[i].R * inp[name].groups[i]
-            return r
+        phi = {}
+        s = 0
+        for comp in inp:
+            s += self.phase[comp].r * self.phase[comp].x
+        for comp in inp:
+            phi[comp] = self.phase[comp].r / s
 
-        def get_q(name):
-            q = 0
-            for i in inp[name].groups:
-                q += self.t_groups[i].Q * inp[name].groups[i]
-            return q
+        phi_m = {}
+        s = 0
+        for comp in inp:
+            s += self.phase[comp].r ** (3/4) * self.phase[comp].x
+        for comp in inp:
+            phi_m[comp] = self.phase[comp].r ** (3/4) / s
 
-        def get_fc(name):
-            s = 0
-            for j in inp:
-                rj = get_r(j)
-                s += (rj ** (3 / 4)) * inp[j].x
-            ri = get_r(name)
-            return (ri ** (3 / 4)) / s
-
-        def get_f(name):
-            s = 0
-            for j in inp:
-                rj = get_r(j)
-                s += rj * inp[j].x
-            ri = get_r(name)
-            return ri * inp[name].x / s
-
-        def get_t(name):
-            s = 0
-            for j in inp:
-                qj = get_q(j)
-                s += qj * inp[j].x
-            qi = get_q(name)
-            return qi * inp[name].x / s
+        theta = {}
+        s = 0
+        for comp in inp:
+            s += self.phase[comp].q * self.phase[comp].x
+        for comp in inp:
+            theta[comp] = self.phase[comp].q / s
 
         rez = {}
         for i in inp:
-            qi = get_q(i)
-            fi = get_f(i)
-            fic = get_fc(i)
-            ti = get_t(i)
-            xi = inp[i].x
-
-            lny = 1 - fic + log(fic) - z / 2 * qi * \
-                  (log(fi / ti) + 1 - fi / ti)
-            rez[i] = lny
+            rez[i] = 1 - phi_m[i] + log(phi_m[i]) - 5 * self.phase[i].q * (1 - phi[i]/theta[i] + log(phi[i]/theta[i]))
         return rez
 
-    def get_res(self, inp, T: float) -> dict[str, float]:
+    def get_res(self, inp, T: float):
         r"""Calculate residual component :math:`\ln\gamma_i^r` using original equation
 
 
@@ -346,102 +327,89 @@ class UNIFAC(ActivityModel):
         dict[str, float]
             Returns residual component {"Substance name": lny_a}
         """
-        g = {}  # группа: Г
-        gp = {}  # вещество: {группа: Гi}
+        if self.T != T:
+            self.calculate_psi(T)
+            for comp in inp:
+                x = inp[comp].x
+                pure_comp = {
+                    comp: inp[comp]
+                }
+                pure_comp[comp].x = 1
+                self.gamma_gr_pure[comp] = self.__get_gamma_gr(pure_comp)
+                pure_comp[comp].x = x
+                self.T = T
+
         rez = {}
-
-        # phase -> {группа: Гi}
-        def get_g(a):
-            x = {}  # {имя группы: X}
-            tet = {}  # {имя группы: тета}
-            gr = []
-            rez = {}
-
-            # создается список с именами всех групп в данной фазе
-            for i in a:
-                for j in a[i].groups:
-                    if j not in gr:
-                        gr.append(j)
-
-            # расчет х
-            den = 0
-            # расчет знаменателя
-            for i in a:
-                for j in a[i].groups:
-                    den += a[i].groups[j] * a[i].x
-            # расчет числителей
-            for g in gr:
-                num = 0
-                for i in a:
-                    for j in a[i].groups:
-                        if j == g:
-                            num += a[i].groups[j] * a[i].x
-                x[g] = num / den
-
-            # расчет тет
-            den = 0
-            # расчет знаменателя
-            for t in gr:
-                den += self.t_groups[t].Q * x[t]
-            for t in gr:
-                tet[t] = self.t_groups[t].Q * x[t] / den
-
-            for s in gr:
-                s1 = 0
-                s2 = 0
-                # сумма под первым логарифмом
-                for t in gr:
-                    m = self.t_groups[t].id
-                    k = self.t_groups[s].id
-                    a_mk = self.interaction_matrix[m][k]
-                    s1 += tet[t] * exp(- (a_mk[0]
-                                          + a_mk[1] * T
-                                          + a_mk[2] * T ** 2)
-                                       / T)
-
-                # сумма под вторым логарифмом
-                for t in gr:
-                    k = self.t_groups[s].id
-                    m = self.t_groups[t].id
-                    a_km = self.interaction_matrix[k][m]
-                    num = tet[t] * exp(
-                        - (a_km[0]
-                           + a_km[1] * T
-                           + a_km[2] * T ** 2)
-                        / T)  # значение в числителе для m
-                    den = 0
-                    # расчет знаменателя
-                    for u in gr:
-                        n = self.t_groups[u].id
-                        m = self.t_groups[t].id
-                        a_nm = self.interaction_matrix[n][m]
-                        den += tet[u] * exp(- (a_nm[0]
-                                               + a_nm[1] * T
-                                               + a_nm[2] * T ** 2)
-                                            / T)
-                    s2 += num / den
-                rez[s] = self.t_groups[s].Q * (1 - log(s1) - s2)
-            return rez
-
-        g = get_g(inp)
-
-        # расчет Г в растворе содержащем только один тип молекул Гik
-        for i in inp:
-            buf = {}
-            '''
-            создание фазы из одного компонента,
-            концентрации можно не менять тк все нормируется
-            '''
-            buf[i] = inp[i]
-            gp[i] = get_g(buf)
-
-        for i in inp:
+        gamma_gr = self.__get_gamma_gr(inp)
+        for comp in inp:
             s = 0
-            for k in inp[i].groups:
-                s += inp[i].groups[k] * (g[k] - gp[i][k])
-            rez[i] = s
+            for gr in inp[comp].groups:
+                s += inp[comp].groups[gr] * (gamma_gr[gr] - self.gamma_gr_pure[comp][gr])
+            rez[comp] = s
 
         return rez
+
+    def __get_gamma_gr(self, a):
+        x = {}  # {имя группы: X}
+        theta = {}  # {имя группы: тета}
+        rez = {}
+
+        s = 0
+        for comp in a:
+            for gr in a[comp].groups:
+                s += a[comp].groups[gr] * a[comp].x
+        for gr in self.groups:
+            num = 0
+            for comp in a:
+                for gr2 in a[comp].groups:
+                    if gr2 == gr:
+                        num += a[comp].groups[gr2] * a[comp].x
+            x[gr] = num / s
+
+        # расчет тет
+        s = 0
+        for gr in self.groups:
+            s += self.t_groups[gr].Q * x[gr]
+        for gr in self.groups:
+            theta[gr] = self.t_groups[gr].Q * x[gr] / s
+
+        for gr_k in self.groups:
+            s1 = 0
+            # сумма1
+            for gr_m in self.groups:
+                m = self.t_groups[gr_m].id
+                k = self.t_groups[gr_k].id
+                psi_mk = self.psi[m][k]
+                s1 += theta[gr_m] * psi_mk
+
+            s2 = 0
+            # сумма2
+            for gr_m in self.groups:
+                b = 0
+                for gr_n in self.groups:
+                    n = self.t_groups[gr_n].id
+                    m = self.t_groups[gr_m].id
+                    psi_nm = self.psi[n][m]
+                    b += theta[gr_n] * psi_nm
+
+                k = self.t_groups[gr_k].id
+                m = self.t_groups[gr_m].id
+                psi_km = self.psi[k][m]
+
+                s2 += theta[gr_m] * psi_km / b
+
+            rez[gr_k] = self.t_groups[gr_k].Q * (1 - log(s1) - s2)
+
+        return rez
+
+    def calculate_psi(self, T):
+        for id1 in self.psi:
+            for id2 in self.psi:
+                a_ij = self.interaction_matrix[id1][id2]
+                self.psi[id1][id2] = exp(- (a_ij[0]
+                                          + a_ij[1] * T
+                                          + a_ij[2] * T ** 2)
+                                       / T)
 
     def get_ge(self, system: dict[str, float], T=298) -> float:
         """Calculate excess molar Gibbs free energy
@@ -528,30 +496,14 @@ class UNIFAC(ActivityModel):
     def change_t2(self, i, j, vals):
         self.interaction_matrix[i - 1][j - 1] = vals
 
-
-# class UNIFAC_W(ActivityModel):
-#     def __init__(self, uf: UNIFAC, Mw):
-#         self.Mw = Mw
-#         self.uf = uf
-#
-#     def get_y(self, system, T=298.0):
-#         keys = list(system.keys())
-#
-#         w_M = 0
-#         for i in keys:
-#             w_M += system[i] / self.Mw[i]
-#
-#         system_x = {}
-#         for i in keys:
-#             system_x[i] = (system[i] / self.Mw[i]) / w_M
-#
-#         y = self.uf.get_y(system_x, T)
-#
-#         y_w = {}
-#         for i in keys:
-#             y_w[i] = y[i] / (self.Mw[i] * w_M)
-#
-#         return y_w
+    def __calculate_vdw(self):
+        for comp in self.phase:
+            r, q = 0, 0
+            for gr in self.phase[comp].groups:
+                r += self.phase[comp].groups[gr] * self.t_groups[gr].R
+                q += self.phase[comp].groups[gr] * self.t_groups[gr].Q
+            self.phase[comp].r = r
+            self.phase[comp].q = q
 
 
 class UNIFAC_W(UNIFAC):
