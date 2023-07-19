@@ -426,11 +426,16 @@ class UNIFAC(ActivityModel):
         float
             excess molar Gibbs free energy
         """
-        y = self.get_y(system, T=T)
-        ge = 0
-        for sub in system:
-            ge += system[sub] * log(y[sub])
-        return R * T * ge
+        if self.dict_mode:
+            y = self.get_y(system, T=T)
+            ge = 0
+            for sub in system:
+                ge += system[sub] * log(y[sub])
+            return R * T * ge
+        else:
+            y = self.get_y(system, T=T)
+            ge = np.sum(system * np.log(y))
+            return R * T * ge
 
     def get_ge_RT(self, system, T=298):
         """Calculate excess molar Gibbs free energy divided by RT
@@ -447,11 +452,16 @@ class UNIFAC(ActivityModel):
         float
             excess molar Gibbs free energy
         """
-        y = self.get_y(system, T=T)
-        ge = 0
-        for sub in system:
-            ge += system[sub] * log(y[sub])
-        return ge
+        if self.dict_mode:
+            y = self.get_y(system, T=T)
+            ge = 0
+            for sub in system:
+                ge += system[sub] * log(y[sub])
+            return ge
+        else:
+            y = self.get_y(system, T=T)
+            ge = np.sum(system * np.log(y))
+            return ge
 
     def get_t2(self, i, j):
         print(self.interaction_matrix[i][j])
