@@ -20,7 +20,6 @@ Submodules
    pytherm.constants
    pytherm.gaseq
    pytherm.lle
-   pytherm.lser
    pytherm.sm
    pytherm.solver
    pytherm.vle

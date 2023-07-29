@@ -6,10 +6,11 @@ Activity coefficient models
 Non-electrolyte models
 ----------------------
 
-There are 2 non-electrolyte activity coefficient models in pytherm:
+There are 3 non-electrolyte activity coefficient models in pytherm:
 
 * :obj:`UNIFAC <pytherm.activity.unifac.UNIFAC>`
 * :obj:`Modified UNIFAC <pytherm.activity.unifac.UNIFAC>`
+* :obj:`UNIQUAC <pytherm.activity.uniquac.UNIQUAC>`
 
 Electrolyte models
 -------------------

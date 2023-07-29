@@ -5,13 +5,14 @@ with open("README.rst", "r") as readme_file:
     readme = readme_file.read()
 
 requirements = ['numpy', ]
+version = pytherm.__version__
 
 setup(
     name='pytherm',
     # packages = ['pytherm'],
     packages=find_packages(),
     license='MIT',
-    version=pytherm.__version__,
+    version=version,
     description='Pytherm is an open-source scientific Python package for thermodynamic modeling.',
     author='Ignaty Efimov',
     install_requires=requirements,

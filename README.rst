@@ -16,9 +16,10 @@ Current features
 -----------------
 * Activity models:
  
-  * UNIFAC and Modified UNIFAC 
-  * PITZER
-  * SIT
+  * UNIFAC and Modified UNIFAC (6 parameters sets)
+  * UNIQUAC
+  * PITZER (full form)
+  * Specific ion Interaction
 
 * EOS models:
 
@@ -28,7 +29,8 @@ Current features
 
   * Solubility in 2 and 3 component systems 
   * LLE for non-electrolyte systems 
-  * VLE using EOS 
+  * VLE using EOS
+  * Multicomponent equilibrium calculations using PITZER ans SIT models
 
 Getting Started
 ---------------
@@ -54,13 +56,17 @@ Example of activity coefficient calculations using UNIFAC:
 
 Some more examples of use can be found in /examples
 
+Documentation
+--------------
+    https://pytherm.readthedocs.io/en/latest/index.html
+
 Roadmap
 -------
 Future features:
 
 * Activity models:
 
-  * UNIQUAC 
+  * COSMO-SAC
   * NRTL
   * Regular solution
   * LIFAC
@@ -68,4 +74,4 @@ Future features:
 
 * Calculations:
 
-  * Multicomponent equilibrium calculations using PITZER ans SIT models
+  * Convex hull analysis for phase equilibrate
