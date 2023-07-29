@@ -8,11 +8,22 @@ calculations with the UNIFAC model.
 UNIFAC Class
 ------------
 .. autoclass:: UNIFAC
-    :members: get_y, get_comb_original, get_comb_mod, get_res
+    :members: get_y, get_y_array
     :undoc-members:
-    :show-inheritance:
     :member-order: bysource
 
+UNIFAC_W Class
+--------------
+.. autoclass:: UNIFAC_W
+    :members: get_y
+    :undoc-members:
+    :member-order: bysource
+
+Functions
+---------
+.. autofunction:: get_res
+.. autofunction:: get_comb_classic
+.. autofunction:: get_comb_mod
 
 UNIFAC substances
 -----------------
@@ -38,7 +49,7 @@ There are some ready to use :obj:`.ParametersUNIFAC` objects in :obj:`.unifac.da
 References
 ----------
 
-.. [1] Published DDB parameters, 2021 JAN, 
+.. [1] Published DDB parameters, 2021 JAN,
     https://www.ddbst.com/published-parameters-unifac.html
 .. [2] Magnussen1981, DOI: https://doi.org/10.1021/i200013a024
 .. [3] Bastos1988, DOI: https://doi.org/10.1021/i200013a024
@@ -48,23 +59,248 @@ References
 .. [6] Bessa2016, DOI: https://doi.org/10.1016/j.fluid.2016.05.020
 
 """
-from math import log, exp, e
-from typing import Callable
-
+from numba import njit
 import numpy as np
-
 from pytherm import constants
 from .db import unifac as datasets
 from .db.unifac import ParametersUNIFAC, SubstancesUNIFAC
 from .activity_model import ActivityModel
 
 R = constants.R
+use_numba_cache = True
 
 
 class UNIFAC(ActivityModel):
     r"""UNIFAC model for activity coefficients calculation
 
-    UNIFAC type (classic or modified) depends on :obj:`.ParametersUNIFAC`
+        UNIFAC type (classic or modified) depends on :obj:`.ParametersUNIFAC`
+        For classic mode UNIFAC use :func:`get_comb_classic`, for modified :func:`get_comb_mod`
+
+        Parameters
+        ----------
+        dataset : ParametersUNIFAC
+            ParametersUNIFAC object with interaction parameters
+        substances : SubstancesUNIFAC
+            Substances UNIFAC object with substance's group representation
+
+        Examples
+        --------
+        >>> import pytherm.activity.unifac as uf
+        >>> subs = {
+        ...    "n-hexane": "2*CH3 4*CH2",
+        ...    "butanone-2": "1*CH3 1*CH2 1*CH3CO",
+        ... }
+        >>> x = [0.5, 0.5]
+        >>> substances = uf.datasets.SubstancesUNIFAC()
+        >>> substances.get_from_dict(subs)
+        >>> am = uf.UNIFAC(dataset=uf.datasets.DOR, substances=substances)
+        >>> am.get_y(x=x, T=298)
+        {'n-hexane': 1.514766775270851, 'butanone-2': 1.4331647782163541}
+        """
+
+    gr_names: np.ndarray  # array with group names
+    gr_id_global: np.ndarray  # array with global main id for each group from ParametersUNIFAC
+    gr_id_local: np.ndarray  # array with local main id for each group (from 0 to 1)
+    group_comp: np.ndarray[(np.any, np.any,)]  # matrix with group composition
+    matrix_id: np.ndarray  # array with global gr main id
+    res_matrix: np.ndarray[(np.any, np.any,), np.any]  # matrix with a, b, c for res component
+    group_R: np.ndarray  # R array (for group)
+    group_Q: np.ndarray  # Q array (for group)
+    comp_r: np.ndarray  # q array (for component)
+    comp_q: np.ndarray  # r array (for component)
+    n_gr: int  # number of UNIFAC groups
+    n_comp: int  # number of components
+    T: float  # current temperature, K
+    psi: np.ndarray[(np.any, np.any,)]  # psi matrix for current temperature
+    ln_gamma_pure: np.ndarray[(np.any, np.any,)]  # matrix of groups ln_gamma for pure components
+    modified_mode: bool  # if True use modified combinatorial part
+
+    def __init__(self, dataset: ParametersUNIFAC, substances: SubstancesUNIFAC):
+        gr_list = []
+        id_list = []
+        for s in substances:
+            for gr in substances[s].groups:
+                if gr not in gr_list:
+                    gr_list.append(gr)
+                    id_list.append(dataset['comb'][gr].id)
+        self.gr_names = np.array(gr_list)
+        self.gr_id_global = np.array(id_list)
+
+        comp_list = []
+        for s in substances:
+            b = []
+            for gr in self.gr_names:
+                if gr in substances[s].groups:
+                    b.append(substances[s].groups[gr])
+                else:
+                    b.append(0)
+            comp_list.append(b)
+        self.group_comp = np.array(comp_list)
+
+        q_list = []
+        r_list = []
+        for gr in self.gr_names:
+            q_list.append(dataset['comb'][gr].Q)
+            r_list.append(dataset['comb'][gr].R)
+        self.group_Q = np.array(q_list)
+        self.group_R = np.array(r_list)
+
+        id = []
+        for i in self.gr_id_global:
+            if i not in id:
+                id.append(i)
+        self.matrix_id = np.array(id)
+
+        loc_id = []
+        for i, gr_i in enumerate(self.gr_id_global):
+            for j, gr_j in enumerate(self.matrix_id):
+                if gr_i == gr_j:
+                    loc_id.append(j)
+        self.gr_id_local = np.array(loc_id)
+
+        inter = []
+        for i in self.matrix_id:
+            b = []
+            for j in self.matrix_id:
+                if j in dataset['res'][i]:
+                    b.append(dataset['res'][i][j])
+                else:
+                    self.__parameters_alert(i, j)
+            inter.append(b)
+        self.res_matrix = np.array(inter)
+
+        self.n_gr = len(self.gr_id_global)
+        self.n_comp = len(substances)
+
+        self.comp_r, self.comp_q = self.__get_vdw_params()
+
+        self.T = -1
+
+        n_main_gr = len(self.matrix_id)
+        self.psi = np.zeros((n_main_gr, n_main_gr))
+        self.ln_gamma_pure = np.zeros((self.n_comp, self.n_gr))
+
+        self.unifac_mode = dataset['type']
+        if self.unifac_mode == 'modified':
+            self.modified_mode = True
+        elif self.unifac_mode == 'classic':
+            self.modified_mode = False
+        else:
+            raise Warning("unknown unifac mode")
+
+    def get_y(self, conc: np.ndarray, T=298.0) -> np.ndarray:
+        r"""Calculate activity coefficients for conc array
+
+        Concentrations must be in molar fractions
+
+        .. math::
+            \gamma_i =  \exp\left(\ln \gamma_i^c + \ln \gamma_i^r \right)
+
+        Parameters
+        ----------
+        conc : np.ndarray
+            Input concentration array, [molar fraction]
+        T : float, optional
+            Temperature, [K], by default 298.0
+
+        Returns
+        -------
+        np.ndarray
+            Activity coefficients
+
+        Examples
+        --------
+        >>> UNIFAC.get_y([0.5, 0.5], T=298)
+        """
+        if self.T != T:
+            self.T = T
+            self.psi = get_psi(T, self.matrix_id, self.res_matrix)
+            self.ln_gamma_pure = get_gamma_pure(conc, self.n_comp, self.n_gr, self.group_comp, self.group_Q,
+                                                self.gr_id_local, self.psi)
+        y = get_y(conc, self.comp_r, self.comp_q, self.n_gr, self.group_comp, self.group_Q, self.gr_id_local,
+                  self.n_comp, self.psi, self.ln_gamma_pure, self.modified_mode)
+        return y
+
+    def get_y_array(self, conc: np.ndarray[(np.any, np.any,)], T=298) -> np.ndarray[(np.any, np.any,)]:
+        r"""Calculate activity coefficients for conc matrix
+
+        .. math::
+            \gamma_i =  \exp\left(\ln \gamma_i^c + \ln \gamma_i^r \right)
+
+        Parameters
+        ----------
+        conc : np.ndarray
+            Input concentration matrix, [molar fraction]
+        T : float, optional
+            Temperature, [K], by default 298.0
+
+        Returns
+        -------
+        np.ndarray[(np.any, np.any,)]
+            Activity coefficients
+
+        Examples
+        --------
+        >>> UNIFAC.get_y([[0.5, 0.5], [[0.6, 0.4]]])
+        """
+        if self.T != T:
+            self.T = T
+            self.psi = get_psi(T, self.matrix_id, self.res_matrix)
+            self.ln_gamma_pure = get_gamma_pure(conc, self.n_comp, self.n_gr, self.group_comp, self.group_Q,
+                                                self.gr_id_local, self.psi)
+        y = get_y_array(conc, self.comp_r, self.comp_q, self.n_gr, self.group_comp, self.group_Q, self.gr_id_local,
+                        self.n_comp, self.psi, self.ln_gamma_pure, self.modified_mode)
+        return y
+
+    def get_ge(self, conc: np.ndarray, T=298.0) -> float:
+        """Calculate excess molar Gibbs free energy
+
+        Parameters
+        ----------
+        conc : np.ndarray
+            Input concentration array, [molar fraction]
+        T : int, optional
+            Temperature, [K], by default 298
+
+        Returns
+        -------
+        float
+            Excess molar Gibbs free energy
+        """
+        y = self.get_y(conc, T)
+        ge = np.sum(conc * np.log(y))
+        return R * T * ge
+
+    def __get_vdw_params(self) -> (np.ndarray, np.ndarray):
+        """Calculate r and q parameters
+
+        .. math::
+            r_i = \sum_{k=1}^{n}\nu_kR_k
+            q_i = \sum_{k=1}^{n}\nu_kQ_k
+
+
+        Returns
+        -------
+        (np.ndarray, np.ndarray)
+           (r array, q array)
+        """
+        r = np.zeros(self.n_comp)
+        q = np.zeros(self.n_comp)
+        for i in range(self.n_comp):
+            r[i] = np.sum(self.group_R * self.group_comp[i])
+            q[i] = np.sum(self.group_Q * self.group_comp[i])
+        return r, q
+
+    def __parameters_alert(self, *p):
+        raise Warning(
+            f"NO INTERACTION PARAMETERS FOR: {p}"
+        )
+
+
+class UNIFAC_W(UNIFAC):
+    r"""UNIFAC model for activity coefficients calculation in weight fractions.
+
+    Override :obj:`UNIFAC` methods to calculate properties in weight fractions
 
     Parameters
     ----------
@@ -72,476 +308,213 @@ class UNIFAC(ActivityModel):
         ParametersUNIFAC object with interaction parameters
     substances : SubstancesUNIFAC
         Substances UNIFAC object with substance's group representation
+    molar_weight
+        array of molar weighs
 
-    Raises
-    ------
-    Warning
-        Raises if unifac_mode is unknown (not classic or modified)
-
-    Examples
-    --------
-    >>> import pytherm.activity.unifac as uf
-    >>> subs = {
-    ...    "n-hexane": "2*CH3 4*CH2",
-    ...    "butanone-2": "1*CH3 1*CH2 1*CH3CO",
-    ... }
-    >>> system = {
-    ...    'n-hexane': 0.5,
-    ...    'butanone-2': 0.5,
-    ... }
-    >>> substances = uf.datasets.SubstancesUNIFAC()
-    >>> substances.get_from_dict(subs)
-    >>> am = uf.UNIFAC(dataset=uf.datasets.DOR, substances=substances)
-    >>> am.get_y(system=system, T=298)
-    {'n-hexane': 1.514766775270851, 'butanone-2': 1.4331647782163541}
     """
-    get_comb: Callable
-    dict_mode: bool
-    phase: SubstancesUNIFAC
-    groups: list
-    T = -1.0
+    molar_weight: np.ndarray
 
-    def __init__(self,
-                 dataset: ParametersUNIFAC,
-                 substances: SubstancesUNIFAC,
-                 dict_mode=False):
-        self.unifac_mode = dataset['type']
-        self.interaction_matrix = dataset['res']
-        self.t_groups = dataset['comb']
-        self.phase = substances
-        self.dict_mode = dict_mode
+    def __init__(
+            self,
+            dataset: ParametersUNIFAC,
+            substances: SubstancesUNIFAC,
+            molar_weight,
+    ):
+        self.molar_weight = molar_weight
+        super().__init__(dataset=dataset, substances=substances)
 
-        if self.unifac_mode == 'modified':
-            self.get_comb = self.get_comb_mod
-        elif self.unifac_mode == 'classic':
-            self.get_comb = self.get_comb_original
-        else:
-            raise Warning("unknow unifac mode")
+    def get_y(self, conc: np.ndarray, T=298.0) -> np.ndarray:
+        r"""Calculate activity coefficients for conc array
 
-        self.__check_inter()
-        self.__calculate_vdw()
-
-        gr = []
-        for i in substances:
-            for j in substances[i].groups:
-                if j not in gr:
-                    gr.append(j)
-        self.groups = gr
-
-        gr_id = []
-        for gr in self.groups:
-            if self.t_groups[gr].id not in gr_id:
-                gr_id.append(self.t_groups[gr].id)
-        psi = {}
-        for id1 in gr_id:
-            b = {}
-            if id1 not in psi:
-                psi[id1] = {}
-            for id2 in gr_id:
-                b[id2] = 0
-            psi[id1] = b
-            self.psi = psi
-
-            gamma_gr_pure = {}
-            for comp in self.phase:
-                gamma_gr_pure[comp] = {}
-            for comp in self.phase:
-                for gr in self.groups:
-                    gamma_gr_pure[comp][gr] = 0
-            self.gamma_gr_pure = gamma_gr_pure
-
-    def get_y(self, system, T=298):
-        r"""Calculate activity coefficietns for system dict
+        Concentrations must be in weight fractions
 
         .. math::
             \gamma_i =  \exp\left(\ln \gamma_i^c + \ln \gamma_i^r \right)
 
         Parameters
         ----------
-        system
-            Input dictionary {"Substance name": concentration}
-        T : int, optional
-            Temperature, [K], by default 298
+        conc : np.ndarray
+            Input concentration array, [weight fraction]
+        T : float, optional
+            Temperature, [K], by default 298.0
 
         Returns
         -------
-        dict[str, float]
+        np.ndarray
             Activity coefficients
+
+        Examples
+        --------
         """
-        keys = list(self.phase.keys())
-
-        if self.dict_mode:
-            for i in system:
-                self.phase[i].x = system[i]
-        else:
-            for i in range(len(self.phase)):
-                self.phase[keys[i]].x = system[i]
-
-        comb = self.get_comb(self.phase)
-        res = self.get_res(self.phase, T)
-        y = {}
-        for i in keys:
-            lny = comb[i] + res[i]
-            y[i] = e ** lny
-
-        if self.dict_mode:
-            return y
-        else:
-            return np.array(list(y.values()))
-
-    def get_comb_original(self, inp: SubstancesUNIFAC) -> dict[str, float]:
-        r"""Calculate combinatorial component :math:`\ln\gamma_i^c` using original UNIFAC equation
-
-        .. math::
-            \ln \gamma_i^c = \ln \frac{\phi_i}{x_i} + \frac{z}{2} q_i
-            \ln\frac{\theta_i}{\phi_i} + L_i - \frac{\phi_i}{x_i}
-            \sum_{j=1}^{n} x_j L_j
-
-        .. math::
-            \theta_i = \frac{x_i q_i}{\sum_{j=1}^{n} x_j q_j}
-
-        .. math::
-            \phi_i = \frac{x_i r_i}{\sum_{j=1}^{n} x_j r_j}
-
-        .. math::
-            L_i = 5(r_i - q_i)-(r_i-1)
-
-        Parameters
-        ----------
-        inp : SubstancesUNIFAC
-            SubstancesUNIFAC object with defined concentrations
-        z : int, optional
-            Coordination number, by default 10
-
-        Returns
-        -------
-        dict[str, float]
-            Returns lny_c {"Substance name": lny_c}
-        """
-
-        phi = {}
-        s = 0
-        for comp in inp:
-            s += self.phase[comp].r * self.phase[comp].x
-        for comp in inp:
-            phi[comp] = self.phase[comp].r / s
-
-        theta = {}
-        s = 0
-        for comp in inp:
-            s += self.phase[comp].q * self.phase[comp].x
-        for comp in inp:
-            theta[comp] = self.phase[comp].q / s
-
-        rez = {}
-        for i in inp:
-            rez[i] = 1 - phi[i] + log(phi[i]) - 5 * self.phase[i].q * (
-                        1 - phi[i] / theta[i] + log(phi[i] / theta[i]))
-        return rez
-
-    def get_comb_mod(self, inp: SubstancesUNIFAC) -> dict[str, float]:
-        r"""Calculate combinatorial component :math:`\ln\gamma_i^c` using modified equation
-
-        .. math::
-            \ln \gamma_i^c = 1 - {V'}_i + \ln({V'}_i) - 5q_i \left(1
-            - \frac{V_i}{F_i}+ \ln\left(\frac{V_i}{F_i}\right)\right)
-
-        .. math::
-            V'_i = \frac{r_i^{3/4}}{\sum_j r_j^{3/4}x_j}
-
-        .. math::
-            V_i = \frac{r_i}{\sum_j r_j x_j}
-
-        .. math::
-            F_i = \frac{q_i}{\sum_j q_j x_j}
-
-        Parameters
-        ----------
-        inp : SubstancesUNIFAC
-            SubstancesUNIFAC object with defined concentrations
-        z : int, optional
-            Coordination number, by default 10
-
-        Returns
-        -------
-        dict[str, float]
-            Returns lny_c {"Substance name": lny_c}
-        """
-
-        phi = {}
-        s = 0
-        for comp in inp:
-            s += self.phase[comp].r * self.phase[comp].x
-        for comp in inp:
-            phi[comp] = self.phase[comp].r / s
-
-        phi_m = {}
-        s = 0
-        for comp in inp:
-            s += self.phase[comp].r ** (3/4) * self.phase[comp].x
-        for comp in inp:
-            phi_m[comp] = self.phase[comp].r ** (3/4) / s
-
-        theta = {}
-        s = 0
-        for comp in inp:
-            s += self.phase[comp].q * self.phase[comp].x
-        for comp in inp:
-            theta[comp] = self.phase[comp].q / s
-
-        rez = {}
-        for i in inp:
-            rez[i] = 1 - phi_m[i] + log(phi_m[i]) - 5 * self.phase[i].q * (1 - phi[i]/theta[i] + log(phi[i]/theta[i]))
-        return rez
-
-    def get_res(self, inp, T: float):
-        r"""Calculate residual component :math:`\ln\gamma_i^r` using original equation
-
-
-        .. math::
-            \ln \gamma_i^r = \sum_{k}^n \nu_k^{(i)} \left[ \ln \Gamma_k
-            - \ln \Gamma_k^{(i)} \right]
-
-        .. math::
-            \ln \Gamma_k = Q_k \left[1 - \ln \sum_m \Theta_m \Psi_{mk} - \sum_m
-            \frac{\Theta_m \Psi_{km}}{\sum_n \Theta_n \Psi_{nm}}\right]
-
-        .. math::
-            \Theta_m = \frac{Q_m X_m}{\sum_{n} Q_n X_n}
-
-        .. math::
-            X_m = \frac{ \sum_j \nu^j_m x_j}{\sum_j \sum_n \nu_n^j x_j}
-
-        .. math::
-            \Psi_{mn} = \exp\left(\frac{-a_{mn} - b_{mn}T - c_{mn}T^2}{T}\right)
-
-        Parameters
-        ----------
-        inp : SubstancesUNIFAC
-            SubstancesUNIFAC object with defined concentrations
-        T : float
-            Temperature, [K]
-
-        Returns
-        -------
-        dict[str, float]
-            Returns residual component {"Substance name": lny_a}
-        """
-        if self.T != T:
-            self.calculate_psi(T)
-            for comp in inp:
-                x = inp[comp].x
-                pure_comp = {
-                    comp: inp[comp]
-                }
-                pure_comp[comp].x = 1
-                self.gamma_gr_pure[comp] = self.__get_gamma_gr(pure_comp)
-                pure_comp[comp].x = x
-                self.T = T
-
-        rez = {}
-        gamma_gr = self.__get_gamma_gr(inp)
-        for comp in inp:
-            s = 0
-            for gr in inp[comp].groups:
-                s += inp[comp].groups[gr] * (gamma_gr[gr] - self.gamma_gr_pure[comp][gr])
-            rez[comp] = s
-
-        return rez
-
-    def __get_gamma_gr(self, a):
-        x = {}  # {имя группы: X}
-        theta = {}  # {имя группы: тета}
-        rez = {}
-
-        s = 0
-        for comp in a:
-            for gr in a[comp].groups:
-                s += a[comp].groups[gr] * a[comp].x
-        for gr in self.groups:
-            num = 0
-            for comp in a:
-                for gr2 in a[comp].groups:
-                    if gr2 == gr:
-                        num += a[comp].groups[gr2] * a[comp].x
-            x[gr] = num / s
-
-        # расчет тет
-        s = 0
-        for gr in self.groups:
-            s += self.t_groups[gr].Q * x[gr]
-        for gr in self.groups:
-            theta[gr] = self.t_groups[gr].Q * x[gr] / s
-
-        for gr_k in self.groups:
-            s1 = 0
-            # сумма1
-            for gr_m in self.groups:
-                m = self.t_groups[gr_m].id
-                k = self.t_groups[gr_k].id
-                psi_mk = self.psi[m][k]
-                s1 += theta[gr_m] * psi_mk
-
-            s2 = 0
-            # сумма2
-            for gr_m in self.groups:
-                b = 0
-                for gr_n in self.groups:
-                    n = self.t_groups[gr_n].id
-                    m = self.t_groups[gr_m].id
-                    psi_nm = self.psi[n][m]
-                    b += theta[gr_n] * psi_nm
-
-                k = self.t_groups[gr_k].id
-                m = self.t_groups[gr_m].id
-                psi_km = self.psi[k][m]
-
-                s2 += theta[gr_m] * psi_km / b
-
-            rez[gr_k] = self.t_groups[gr_k].Q * (1 - log(s1) - s2)
-
-        return rez
-
-    def calculate_psi(self, T):
-        for id1 in self.psi:
-            for id2 in self.psi:
-                a_ij = self.interaction_matrix[id1][id2]
-                self.psi[id1][id2] = exp(- (a_ij[0]
-                                          + a_ij[1] * T
-                                          + a_ij[2] * T ** 2)
-                                       / T)
-
-    def get_ge(self, system: dict[str, float], T=298) -> float:
-        """Calculate excess molar Gibbs free energy
-
-        Parameters
-        ----------
-        system : dict[str, float]
-            Input dictionary {"Substance name": concentration}
-        T : int, optional
-            Temperature, [K], by default 298
-
-        Returns
-        -------
-        float
-            excess molar Gibbs free energy
-        """
-        if self.dict_mode:
-            y = self.get_y(system, T=T)
-            ge = 0
-            for sub in system:
-                ge += system[sub] * log(y[sub])
-            return R * T * ge
-        else:
-            y = self.get_y(system, T=T)
-            ge = np.sum(system * np.log(y))
-            return R * T * ge
-
-    def get_ge_RT(self, system, T=298):
-        """Calculate excess molar Gibbs free energy divided by RT
-
-        Parameters
-        ----------
-        system : dict[str, float]
-            Input dictionary {"Substance name": concentration}
-        T : int, optional
-            Temperature, [K], by default 298
-
-        Returns
-        -------
-        float
-            excess molar Gibbs free energy
-        """
-        if self.dict_mode:
-            y = self.get_y(system, T=T)
-            ge = 0
-            for sub in system:
-                ge += system[sub] * log(y[sub])
-            return ge
-        else:
-            y = self.get_y(system, T=T)
-            ge = np.sum(system * np.log(y))
-            return ge
-
-    def get_t2(self, i, j):
-        print(self.interaction_matrix[i][j])
-
-    def get_t1(self, name):
-        print(self.t_groups[name].id,
-              self.t_groups[name].R, self.t_groups[name].Q)
-
-    def get_gr(self, name):
-        return self.phase[name].groups
-
-    def get_gr_str(self, name):
-        s = ""
-        g = self.phase[name].groups
-        for i in g:
-            s += f"{g[i]}*{i} "
-        return (s[:-1])
-
-    def __check_inter(self):
-        """Checks for the presence of aij and aji parameters for all groups
-        """
-        groups = []
-        ph = self.phase
-        # создается список с именами всех групп в данной фазе
-        for i in ph:
-            for j in ph[i].groups:
-                if j not in groups:
-                    groups.append(j)
-
-        for gr1 in groups:
-            if self.t_groups[gr1].id not in self.interaction_matrix:
-                self.__parameters_alert(gr1)
-            for gr2 in groups:
-                if self.t_groups[gr2].id not in self.interaction_matrix[self.t_groups[gr1].id]:
-                    self.__parameters_alert(gr1, gr2)
-
-    def __parameters_alert(self, *p):
-        raise Warning(
-            f"NO INTERACTION PARAMETERS FOR: {p}"
-        )
-
-    def change_t2(self, i, j, vals):
-        self.interaction_matrix[i - 1][j - 1] = vals
-
-    def __calculate_vdw(self):
-        for comp in self.phase:
-            r, q = 0, 0
-            for gr in self.phase[comp].groups:
-                r += self.phase[comp].groups[gr] * self.t_groups[gr].R
-                q += self.phase[comp].groups[gr] * self.t_groups[gr].Q
-            self.phase[comp].r = r
-            self.phase[comp].q = q
-
-
-class UNIFAC_W(UNIFAC):
-    def __init__(
-            self,
-            dataset: ParametersUNIFAC,
-            substances: SubstancesUNIFAC,
-            Mw,
-            dict_mode=False
-    ):
-        self.Mw = Mw
-        super().__init__(dataset=dataset, substances=substances, dict_mode=dict_mode)
-
-    def get_y(self, system, T=298.0):
-        keys = list(system.keys())
-
-        w_M = 0
-        for i in keys:
-            w_M += system[i] / self.Mw[i]
-
-        system_x = {}
-        for i in keys:
-            system_x[i] = (system[i] / self.Mw[i]) / w_M
-
-        y = super().get_y(system_x, T)
-
-        y_w = {}
-        for i in keys:
-            y_w[i] = y[i] / (self.Mw[i] * w_M)
-
+        w_M = np.sum(conc / self.molar_weight)
+        x = (conc / self.molar_weight) / w_M
+        y = super().get_y(x, T)
+        y_w = y / (self.molar_weight * w_M)
         return y_w
+
+
+@njit(cache=use_numba_cache)
+def get_y(conc: np.ndarray, comp_r: np.ndarray, comp_q: np.ndarray, n_gr: int,
+          group_comp: np.ndarray[(np.any, np.any,)], group_Q: np.ndarray, gr_id_local: np.ndarray, n_comp: int,
+          psi: np.ndarray[(np.any, np.any,)], ln_gamma_pure: np.ndarray[(np.any, np.any,)],
+          modified_mode: bool) -> np.ndarray:
+    if modified_mode:
+        comb = get_comb_mod(conc, comp_r, comp_q)
+    else:
+        comb = get_comb_classic(conc, comp_r, comp_q)
+    res = get_res(conc, n_gr, group_comp, group_Q, gr_id_local, n_comp, psi, ln_gamma_pure)
+
+    lny = comb + res
+    y = np.exp(lny)
+
+    return y
+
+
+@njit(cache=use_numba_cache)
+def get_y_array(conc_array: np.ndarray[(np.any, np.any,)], comp_r: np.ndarray, comp_q: np.ndarray, n_gr: int,
+                group_comp: np.ndarray[(np.any, np.any,)], group_Q: np.ndarray, gr_id_local: np.ndarray, n_comp: int,
+                psi: np.ndarray[(np.any, np.any,)], ln_gamma_pure: np.ndarray[(np.any, np.any,)],
+                modified_mode: bool):
+    y = np.zeros((len(conc_array), 2))
+    for i in range(len(conc_array)):
+        if modified_mode:
+            comb = get_comb_mod(conc_array[i], comp_r, comp_q)
+        else:
+            comb = get_comb_classic(conc_array[i], comp_r, comp_q)
+        res = get_res(conc_array[i], n_gr, group_comp, group_Q, gr_id_local, n_comp, psi, ln_gamma_pure)
+        lny = comb + res
+        y[i] = np.exp(lny)
+
+    return y
+
+
+@njit(cache=use_numba_cache)
+def get_comb_mod(conc: np.ndarray, comp_r: np.ndarray, comp_q: np.ndarray) -> np.ndarray:
+    r"""Calculate combinatorial component :math:`\ln\gamma_i^c` using modified equation
+
+    .. math::
+        \ln \gamma_i^c = 1 - {V'}_i + \ln({V'}_i) - 5q_i \left(1
+        - \frac{V_i}{F_i}+ \ln\left(\frac{V_i}{F_i}\right)\right)
+
+    .. math::
+        V'_i = \frac{r_i^{3/4}}{\sum_j r_j^{3/4}x_j}
+
+    .. math::
+        V_i = \frac{r_i}{\sum_j r_j x_j}
+
+    .. math::
+        F_i = \frac{q_i}{\sum_j q_j x_j}
+
+    """
+    phi_m = comp_r ** (3 / 4) / np.sum(comp_r ** (3 / 4) * conc)
+    phi = comp_r / np.sum(comp_r * conc)
+    theta = comp_q / np.sum(comp_q * conc)
+
+    return 1 - phi_m + np.log(phi_m) - 5 * comp_q * (1 - phi / theta + np.log(phi / theta))
+
+
+@njit(cache=use_numba_cache)
+def get_comb_classic(conc: np.ndarray, comp_r: np.ndarray, comp_q: np.ndarray) -> np.ndarray:
+    r"""Calculate combinatorial component :math:`\ln\gamma_i^c` using classic equation
+
+    .. math::
+        \ln \gamma_i^c = 1 - {V}_i + \ln({V}_i) - 5q_i \left(1
+        - \frac{V_i}{F_i}+ \ln\left(\frac{V_i}{F_i}\right)\right)
+
+    .. math::
+        V_i = \frac{r_i}{\sum_j r_j x_j}
+
+    .. math::
+        F_i = \frac{q_i}{\sum_j q_j x_j}
+
+    """
+    phi = comp_r / np.sum(comp_r * conc)
+    theta = comp_q / np.sum(comp_q * conc)
+    return 1 - phi + np.log(phi) - 5 * comp_q * (1 - phi / theta + np.log(phi / theta))
+
+
+@njit(cache=use_numba_cache)
+def get_res(conc: np.ndarray, n_gr: int, group_comp: np.ndarray[(np.any, np.any,)], group_Q: np.ndarray,
+            gr_id_local: np.ndarray, n_comp: int, psi: np.ndarray[(np.any, np.any,)],
+            ln_gamma_pure: np.ndarray[(np.any, np.any,)]) -> np.ndarray:
+    r"""Calculate residual component :math:`\ln\gamma_i^r` using original equation
+
+
+    .. math::
+        \ln \gamma_i^r = \sum_{k}^n \nu_k^{(i)} \left[ \ln \Gamma_k
+        - \ln \Gamma_k^{(i)} \right]
+
+    .. math::
+        \ln \Gamma_k = Q_k \left[1 - \ln \sum_m \Theta_m \Psi_{mk} - \sum_m
+        \frac{\Theta_m \Psi_{km}}{\sum_n \Theta_n \Psi_{nm}}\right]
+
+    .. math::
+        \Theta_m = \frac{Q_m X_m}{\sum_{n} Q_n X_n}
+
+    .. math::
+        X_m = \frac{ \sum_j \nu^j_m x_j}{\sum_j \sum_n \nu_n^j x_j}
+
+    .. math::
+        \Psi_{mn} = \exp\left(\frac{-a_{mn} - b_{mn}T - c_{mn}T^2}{T}\right)
+
+    """
+    ln_gamma = get_gamma_gr(conc, n_gr, group_comp, group_Q, gr_id_local, psi)
+    y = np.zeros_like(conc)
+
+    for i in range(n_comp):
+        y[i] = np.sum(group_comp[i] * (ln_gamma - ln_gamma_pure[i]))
+    return y
+
+
+@njit(cache=use_numba_cache)
+def get_gamma_gr(conc: np.ndarray, n_gr: int, group_comp: np.ndarray[(np.any, np.any,)], group_Q: np.ndarray,
+                 gr_id_local: np.ndarray, psi: np.ndarray[(np.any, np.any,)]):
+    s = np.array([np.sum(group_comp.T[i] * conc) for i in range(n_gr)])
+    X = s / np.sum(s)
+    theta = X * group_Q / np.sum(X * group_Q)
+
+    # temps = np.array((1, T, T ** 2))
+    # n_main_gr = len(matrix_id)
+    # psi = np.zeros((n_main_gr, n_main_gr))
+    # for i in range(n_main_gr):
+    #     for j in range(n_main_gr):
+    #         psi[i][j] = np.exp(np.sum(- res_matrix[i][j] * temps / T))
+
+    gamma_gr = np.zeros_like(theta)
+    for k in range(n_gr):
+        s1 = 0
+        for m in range(n_gr):
+            s1 += theta[m] * psi[gr_id_local[m]][gr_id_local[k]]
+
+        s2 = 0
+        for m in range(n_gr):
+            b = 0
+            for n in range(n_gr):
+                b += theta[n] * psi[gr_id_local[n]][gr_id_local[m]]
+            s2 += theta[m] * psi[gr_id_local[k]][gr_id_local[m]] / b
+
+        gamma_gr[k] = group_Q[k] * (1 - np.log(s1) - s2)
+    return gamma_gr
+
+
+@njit(cache=use_numba_cache)
+def get_psi(T: float, matrix_id: np.ndarray,
+            res_matrix: np.ndarray[(np.any, np.any,), np.any]) -> np.ndarray[(np.any, np.any,)]:
+    temps = np.array((1, T, T ** 2))
+    n_main_gr = len(matrix_id)
+    psi = np.zeros((n_main_gr, n_main_gr))
+    for i in range(n_main_gr):
+        for j in range(n_main_gr):
+            psi[i][j] = np.exp(np.sum(- res_matrix[i][j] * temps / T))
+    return psi
+
+
+@njit(cache=use_numba_cache)
+def get_gamma_pure(conc: np.ndarray, n_comp: int, n_gr: int, group_comp: np.ndarray[(np.any, np.any,)],
+                   group_Q: np.ndarray, gr_id_local: np.ndarray, psi: np.ndarray[(np.any, np.any,)]):
+    ln_gamma_pure = np.zeros((n_comp, n_gr))
+    for i in range(n_comp):
+        pure_conc = np.zeros_like(conc)
+        pure_conc[i] = 1
+        ln_gamma_pure[i] = get_gamma_gr(pure_conc, n_gr, group_comp, group_Q, gr_id_local, psi)
+    return ln_gamma_pure
