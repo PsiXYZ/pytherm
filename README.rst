@@ -2,6 +2,10 @@
 Pytherm
 =======
 
+.. image:: https://readthedocs.org/projects/pytherm/badge/?version=latest
+    :target: https://pytherm.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 .. contents::
 
 What is Pytherm?
@@ -74,4 +78,4 @@ Future features:
 
 * Calculations:
 
-  * Convex hull analysis for phase equilibrate
+  * Convex hull analysis for phase equilibrium
