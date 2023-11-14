@@ -1,0 +1,6 @@
+numpy
+numpydoc
+sphinx
+sphinx-toggleprompt
+scikit-build-core
+pybind11

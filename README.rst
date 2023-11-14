@@ -62,6 +62,7 @@ Some more examples of use can be found in /examples
 
 Documentation
 --------------
+Unfortunately at the moment the documentation is broken.
     https://pytherm.readthedocs.io/en/latest/index.html
 
 Roadmap

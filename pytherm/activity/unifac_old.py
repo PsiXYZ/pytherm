@@ -56,7 +56,7 @@ import numpy as np
 from pytherm import constants
 from .db import unifac as datasets
 from .db.unifac import ParametersUNIFAC, SubstancesUNIFAC
-from .activity_model import ActivityModel
+from pytherm._activity import ActivityModel
 
 R = constants.R
 
@@ -105,6 +105,8 @@ class UNIFAC(ActivityModel):
                  dataset: ParametersUNIFAC,
                  substances: SubstancesUNIFAC,
                  dict_mode=False):
+        ActivityModel.__init__(self)
+        
         self.unifac_mode = dataset['type']
         self.interaction_matrix = dataset['res']
         self.t_groups = dataset['comb']

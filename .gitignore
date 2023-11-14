@@ -1,8 +1,11 @@
+# my test files
 *.pyc
 * t.py
 * t.csv
 * t.txt
+
 .vscode
+.vs
 .idea
 docs/_build
 __pycache__

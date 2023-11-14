@@ -1,6 +1,0 @@
-numpy
-scipy
-numba
-numpydoc
-sphinx
-sphinx-toggleprompt

@@ -1,0 +1,32 @@
+[project]
+name = "pytherm"
+version = "0.2.0"
+description = "Pytherm is an open-source scientific Python package for thermodynamic modeling"
+license = {file = "LICENSE"}
+keywords = ["chemistry",]
+authors = [
+  {name = "Ignaty Efimov", email = "efimov.ignaty@gmail.com"}
+]
+repository = "https://github.com/PsiXYZ/pytherm"
+documentation = "https://pytherm.readthedocs.io/en/latest/"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Education",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Chemistry",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: C++",
+  "Programming Language :: Python :: 3",
+]
+dependencies = [
+  "numpy"
+]
+
+[build-system]
+requires = ["scikit-build-core", "pybind11"]
+build-backend = "scikit_build_core.build"
+
+[tool.scikit-build]
+cmake.minimum-version = "3.26"
+cmake.build-type = "Release"
+build-dir = "./build"
