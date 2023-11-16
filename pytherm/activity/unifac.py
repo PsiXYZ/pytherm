@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from pytherm._activity import (
+
+from pytherm.cpp import (
     __doc__,
     ParametersUNIFAC,
     SubstancesUNIFAC,

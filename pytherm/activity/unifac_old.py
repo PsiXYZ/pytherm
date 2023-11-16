@@ -56,7 +56,7 @@ import numpy as np
 from pytherm import constants
 from .db import unifac as datasets
 from .db.unifac import ParametersUNIFAC, SubstancesUNIFAC
-from pytherm._activity import ActivityModel
+from pytherm.cpp import ActivityModel
 
 R = constants.R
 

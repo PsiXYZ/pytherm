@@ -11,7 +11,7 @@ void linkActivityModel(py::module& m);
 void linkUNIFAC(py::module& m);
 void linkUNIQUAC(py::module& m);
 
-PYBIND11_MODULE(_activity, m)
+void linkActivity(py::module& m)
 {
     linkActivityModel(m);
     linkUNIFAC(m);

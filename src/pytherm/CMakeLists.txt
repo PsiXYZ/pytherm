@@ -3,8 +3,8 @@ file(GLOB_RECURSE CPP_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 file(GLOB_RECURSE PY_CPP_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py.cpp)
 
 
-pybind11_add_module(_activity activity.py.cpp)
+pybind11_add_module(cpp pytherm.py.cpp)
 
 include_directories(PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
-install(TARGETS _activity DESTINATION pytherm)
+install(TARGETS cpp DESTINATION pytherm)

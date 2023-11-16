@@ -18,7 +18,7 @@ Functions
 
 """
 
-from .activity_model import ActivityModel
+from pytherm.cpp import ActivityModel
 import numpy as np
 from pytherm import constants
 R = constants.R
@@ -62,6 +62,8 @@ class UNIQUAC(ActivityModel):
     t_matrix: np.ndarray[(np.any, np.any,)]  # t matrix for current temperature
 
     def __init__(self, comp_r: np.ndarray, comp_q: np.ndarray, res_params: np.ndarray[(np.any, np.any,), np.any]):
+        ActivityModel.__init__(self)
+        
         self.comp_r = np.array(comp_r)
         self.comp_q = np.array(comp_q)
         self.T = -1
@@ -159,5 +161,6 @@ def get_tmatrix(T, res_matrix):
     t_matrix = np.zeros((n_components, n_components))
     for i in range(n_components):
         for j in range(n_components):
-            t_matrix[i][j] = np.exp(np.sum(res_matrix[i][j] * temp))
+            s = np.sum(res_matrix[i][j] * temp)
+            t_matrix[i][j] = np.exp(s)
     return t_matrix
