@@ -520,7 +520,8 @@ vector<float> UNIFAC_W::get_y(const vector<float> &conc, float T)
     }
 
     vector<float> y_x(this->n_comps, 0); 
-    y_x = this->UNIFAC::get_y(conc, T);
+    y_x = this->UNIFAC::get_y(conc_x, T);
+
     vector<float> y_w(this->n_comps, 0);
     for(int i = 0; i < this->n_comps; ++i)
     {

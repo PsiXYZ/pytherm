@@ -2,7 +2,7 @@ from pytherm.activity import unifac as uf
 from datetime import datetime
 import numpy as np
 
-n = 1_000
+n = 1_000_000
 
 params = uf.datasets.get_DOR()
 c = (0.5, 0.5)
