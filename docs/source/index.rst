@@ -19,6 +19,7 @@ Main Features
    :maxdepth: 3
    :caption: Contents:
 
+   pytherm.activity.unifac
    activity_coefficients
 
 Installation

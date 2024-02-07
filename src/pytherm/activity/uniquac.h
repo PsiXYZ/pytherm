@@ -23,4 +23,5 @@ private:
 public:
     UNIQUAC(std::vector<float> &r, std::vector<float> &q, std::vector<std::vector<std::vector<float>>> &res_matrix);
     std::vector<float> get_y(const std::vector<float> &conc, float T) override;
+    std::vector<float> get_a(const std::vector<float> &conc, float T) override;
 };

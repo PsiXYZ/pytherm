@@ -39,10 +39,10 @@ class SubstancesUNIFAC
 private:
 
 public:
+    SubstancesUNIFAC();
     std::vector<std::string> subs_names;
     std::map<std::string, std::map<std::string, float>> subs;
     void get_from_dict(py::dict s_dict);
-    SubstancesUNIFAC();
 };
 
 
@@ -76,6 +76,7 @@ protected:
 public:
     UNIFAC(ParametersUNIFAC &parameters, SubstancesUNIFAC &substances);
     vector<float> get_y(const vector<float> &conc, float T) override;
+    vector<float> get_a(const vector<float> &conc, float T) override;
 };
 
 class UNIFAC_W: public UNIFAC

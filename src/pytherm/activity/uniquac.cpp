@@ -87,6 +87,18 @@ std::vector<float> UNIQUAC::get_y(const std::vector<float> &conc, float T)
     return y;
 }
 
+std::vector<float> UNIQUAC::get_a(const std::vector<float> &conc, float T)
+{   
+    std::vector<float> y = get_y(conc, T);
+    std::vector<float> a(conc.size());
+    for(int i = 0; i < this->n_comp; ++i)
+    {
+        a[i] = y[i] * conc[i];
+    }
+
+    return a;
+}
+
 std::vector<float> UNIQUAC::get_lny_res(const std::vector<float> &conc)
 {
     std::vector<float> lny_res(this->n_comp);

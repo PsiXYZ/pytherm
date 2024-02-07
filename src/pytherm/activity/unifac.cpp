@@ -330,6 +330,18 @@ vector<float> UNIFAC::get_y(const vector<float> &conc, float T)
     return y;
 }
 
+vector<float> UNIFAC::get_a(const vector<float> &conc, float T)
+{   
+    vector<float> y = get_y(conc, T);
+    vector<float> a(conc.size());
+    for(int i = 0; i < this->n_comps; ++i)
+    {
+        a[i] = y[i] * conc[i];
+    }
+
+    return a;
+}
+
 vector<float> UNIFAC::get_lny_comb_modified(const vector<float> &conc)
 {
     vector<float> ln_y_comb(this->n_comps, 0);
