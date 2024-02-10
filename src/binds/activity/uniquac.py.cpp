@@ -1,7 +1,7 @@
 #pragma once
 
 #include "activitymodel.py.cpp"
-#include "uniquac.cpp"
+#include <pytherm/activity/uniquac.cpp>
 
 
 void linkUNIQUAC(py::module& m)

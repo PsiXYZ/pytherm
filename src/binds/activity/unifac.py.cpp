@@ -1,7 +1,7 @@
 #pragma once
 
-#include "activitymodel.py.cpp"
-#include "unifac.cpp"
+#include <pytherm/activity/activitymodel.h>
+#include <pytherm/activity/unifac.cpp>
 
 
 using namespace pybind11::literals;

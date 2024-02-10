@@ -7,3 +7,4 @@ set(PYBIND11_NEWPYTHON ON)
 
 add_subdirectory(externals/pybind11)
 add_subdirectory(src/pytherm)
+add_subdirectory(src/binds)

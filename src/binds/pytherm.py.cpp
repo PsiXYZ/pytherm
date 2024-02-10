@@ -1,7 +1,6 @@
 #pragma once
 
-#include <pytherm/pybind11.h>
-
+#include "pybind11.h"
 #include "activity.py.cpp"
 
 void linkActivity(py::module& m);

@@ -1,8 +1,7 @@
 #pragma once
 
 #include <pybind11/pybind11.h>
-
-#include "activitymodel.h"
+#include <pytherm/activity/activitymodel.h>
 
 namespace py = pybind11;
 

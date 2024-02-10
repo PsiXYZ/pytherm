@@ -4,7 +4,7 @@ Mw = (100, 50)
 c = (0.5, 0.5)
 
 from pytherm.activity import unifac
-params = unifac.datasets.get_DOR()
+params = unifac.datasets.DOR()
 
 subs = {
     "hexane": "2*CH3 4*CH2",
