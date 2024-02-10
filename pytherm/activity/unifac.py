@@ -85,7 +85,7 @@ from pytherm.cpp import (
     ActivityModel,
 )
 
-import pytherm.parameters.unifac as datasets
+import pytherm.parameters.unifac.datasets as datasets
 
 __all__ = [
     "ParametersUNIFAC",
