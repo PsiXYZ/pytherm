@@ -308,7 +308,7 @@ void UNIFAC::calculate_vdw()
     }
 }
 
-vector<float> UNIFAC::get_y(const vector<float> &conc, float T)
+vector<float> UNIFAC::get_y(const vector<float> &conc, const float T)
 {   
     if (this->T != T)
     {
@@ -319,8 +319,8 @@ vector<float> UNIFAC::get_y(const vector<float> &conc, float T)
 
     vector<float> y(this->n_comps, 0);
 
-    vector<float> lny_comb = (this->*get_lny_comb)(conc);
-    vector<float> lny_res = get_lny_res(conc);
+    const vector<float> lny_comb = (this->*get_lny_comb)(conc);
+    const vector<float> lny_res = get_lny_res(conc);
 
     for(int i = 0; i < this->n_comps; ++i)
     {
