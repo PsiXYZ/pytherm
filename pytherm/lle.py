@@ -1,7 +1,7 @@
 from math import log, log10
 from pytherm import constants
 from .solver import minimize
-from pytherm.activity.activity_model import ActivityModel
+from pytherm.activity.activitymodel import ActivityModel
 
 R = constants.R
 

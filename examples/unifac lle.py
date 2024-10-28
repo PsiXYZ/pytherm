@@ -14,8 +14,8 @@ subs_dict = {
     "acetonitrile": "1*CH3CN",
 }
 
-subs = uf.datasets.SubstancesUNIFAC()
+subs = uf.SubstancesUNIFAC()
 subs.get_from_dict(subs_dict)
-am = uf.UNIFAC(dataset=uf.datasets.DOR, substances=subs, dict_mode=True)
+am = uf.UNIFAC(uf.datasets.DOR(), subs)
 
 lq.find_lle(phase1, phase2, am, T=298)
