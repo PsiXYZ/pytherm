@@ -7,4 +7,4 @@ pybind11_add_module(cpp pytherm.py.cpp)
 
 include_directories(PRIVATE ${PROJECT_SOURCE_DIR}/src)
 
-install(TARGETS cpp DESTINATION pytherm)
+install(TARGETS cpp DESTINATION ${SKBUILD_PROJECT_NAME})
