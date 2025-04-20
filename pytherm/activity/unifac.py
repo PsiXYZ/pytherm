@@ -82,6 +82,7 @@ from pytherm.cpp import (
     SubstancesUNIFAC,
     UNIFAC,
     UNIFAC_W,
+    UNIFAC_VISCO,
     ActivityModel,
 )
 
@@ -92,6 +93,7 @@ __all__ = [
     "SubstancesUNIFAC",
     "UNIFAC",
     "UNIFAC_W",
+    "UNIFAC_VISCO",
     "ActivityModel",
     "datasets",
 ]

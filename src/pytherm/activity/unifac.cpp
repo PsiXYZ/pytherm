@@ -103,7 +103,8 @@ void ParametersUNIFAC::readType(std::ifstream &in)
     std::string line;
     std::getline(in, line);
     removeSpaceAtStart(line);
-    if (line == "modified") this->unifacType = true;
+    // if (line == "modified") this->unifacType = true else this->unifacType = false;
+    this->unifacType = (line == "modified") ? true : false;
     // std::cout << line << std::endl;
 }
 

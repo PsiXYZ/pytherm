@@ -2,7 +2,7 @@
 
 #include <pytherm/activity/activitymodel.h>
 #include <pytherm/activity/unifac.cpp>
-
+#include <pytherm/activity/unifac_visco.cpp>
 
 using namespace pybind11::literals;
 
@@ -19,6 +19,14 @@ public:
     using UNIFAC_W::UNIFAC_W; // Inherit constructors
     vector<float> get_y(const vector<float> &conc, float T) override { PYBIND11_OVERRIDE(vector<float>, UNIFAC_W, get_y, conc, T); }
 };
+
+// class PyUNIFAC_VISCO : public UNIFAC_VISCO
+// {
+// public:
+//     using UNIFAC_VISCO::UNIFAC_VISCO; // Inherit constructors
+//     // double get_GE_RT(const vector<float> &conc, float T) override { PYBIND11_OVERRIDE(double, UNIFAC_VISCO, get_GE_RT, conc, T); }
+// };
+
 
 void linkUNIFAC(py::module& m)
 {
@@ -167,7 +175,7 @@ void linkUNIFAC(py::module& m)
       )pbdoc",
              "conc"_a, "T"_a)
              
-         .doc() = R"pbdoc(
+        .doc() = R"pbdoc(
         Implementation of the UNIFAC model to work with weight fractions
 
         UNIFAC type (classic or modified) depends on :obj:`.ParametersUNIFAC`
@@ -179,4 +187,9 @@ void linkUNIFAC(py::module& m)
         substances : SubstancesUNIFAC
             Substances UNIFAC object with substance's group representation
         )pbdoc";
+
+    py::class_<UNIFAC_VISCO, UNIFAC>(m, "UNIFAC_VISCO")
+        .def(py::init<ParametersUNIFAC &, SubstancesUNIFAC &>())
+        .def("get_GE_RT", &UNIFAC_VISCO::get_GE_RT, "Get GE_RT", "conc"_a, "T"_a);
+
 }
