@@ -60,6 +60,12 @@ Example of activity coefficient calculations using UNIFAC:
 
 Some more examples of use can be found in /examples
 
+Installation
+-------------
+  $ git clone git://github.com/PsiXYZ/pytherm
+  $ git submodule update --init --recursive
+  $ pip install .
+
 Documentation
 --------------
 Unfortunately at the moment the documentation is broken.

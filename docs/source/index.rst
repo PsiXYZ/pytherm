@@ -26,6 +26,8 @@ Installation
 ------------
 
    $ git clone git://github.com/PsiXYZ/pytherm
+   $ git submodule update --init --recursive
+   $ pip install .
 
 Citation
 --------
