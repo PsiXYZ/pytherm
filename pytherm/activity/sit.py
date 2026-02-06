@@ -11,13 +11,14 @@ SIT Class
     :member-order: bysource
 """
 import math
+from pytherm.activity.electrolytemodel import ElectrolyteModel
 from .electrolytes import get_I, get_A
 from pytherm.stoichiometry import extract_charges
 import numpy as np
 from .db.sit.sit import sit_parameters
 
 
-class SIT:
+class SIT(ElectrolyteModel):
     r""" Class for activity calculations using Specific ion interaction theory
 
     .. math::
@@ -39,6 +40,8 @@ class SIT:
     epsilon_matrix = None
     dict_mode: bool
     def __init__(self, ph: dict, parameters=sit_parameters, dict_mode=False):
+        super().__init__()
+        
         self.substances = np.array(ph)
         self.charges = np.array(extract_charges(ph))
         self.cations = self.substances[self.charges > 0]
