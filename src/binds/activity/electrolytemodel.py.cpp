@@ -2,7 +2,7 @@
 
 #include <pybind11/pybind11.h>
 
-#include "electrolytemodel.h"
+#include "pytherm/activity/electrolytemodel.h"
 
 namespace py = pybind11;
 
