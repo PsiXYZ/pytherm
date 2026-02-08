@@ -5,6 +5,6 @@ file(GLOB_RECURSE PY_CPP_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.py.cpp)
 
 pybind11_add_module(cpp pytherm.py.cpp)
 
-include_directories(PRIVATE ${PROJECT_SOURCE_DIR}/src)
+include_directories(PRIVATE ${PROJECT_SOURCE_DIR}/cpp)
 
 install(TARGETS cpp DESTINATION ${SKBUILD_PROJECT_NAME})
