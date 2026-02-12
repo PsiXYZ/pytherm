@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 from pytherm.stoichiometry import str_to_reaction
 import re
+import scipy
 
 
 class EquilibriumReaction:
@@ -63,9 +64,9 @@ class EquilibriumSystem():
     T: float
     reactions_v: list[EquilibriumReaction]
     phases_v: list[Phase]
-    substances_list: list[str] = []
-    phases_names: list[str] = []
-    substances_raw: list[str] = []
+    substances_list: list[str]
+    phases_names: list[str]
+    substances_raw: list[str]
     
     log10_k: np.ndarray
 
@@ -81,6 +82,9 @@ class EquilibriumSystem():
     def __init__(self) -> None:
         super().__init__()
         self.phases_v = []
+        self.substances_list = []
+        self.phases_names = []
+        self.substances_raw = []
 
     def init_by_reactions(self, reactions_list: list[EquilibriumReaction]):
         self.reactions_v = reactions_list
@@ -102,7 +106,7 @@ class EquilibriumSystem():
                     self.Af[self.phases_names.index(phase), self.substances_list.index(substance.split("{")[0])] = 1
 
 
-        print(1)
+
 
     def add_phase_by_dict(self, phase: dict[str, float]):
         names = list(phase.keys())
@@ -173,6 +177,10 @@ class EquilibriumSystem():
         self.n = self.n0 + self.Ar @ ksi
         return self.n
 
+    def get_ni(self, ksi: np.ndarray, i: int) -> float:
+        n = self.get_n(ksi)
+        return n[i]
+
     def get_bounds(self, ksi: np.ndarray, reaction_index: int):
         p_ksi = ksi.copy()
         p_ksi[reaction_index] = 0
@@ -199,7 +207,7 @@ class EquilibriumSystem():
         # r_r = min(vals)
         return r_l, r_r
 
-    def equilibrate(self, ph):
+    def equilibrate(self, ph, solver_type='scipy'):
         ph_flat = {}
         for i in ph:
             for j in ph[i]:
@@ -208,13 +216,15 @@ class EquilibriumSystem():
         for i in ph_flat:
             self.n0[self.substances_raw.index(i)] = ph_flat[i]
 
-        # ksi = np.array([0.2, 0.1])
-        # self.get_p(ksi)
+        if solver_type == 'scipy':
+            solver = ScipyEquilibriumSolver()
+        elif solver_type == 'custom_lm':
+            solver = LevenbergMarquardtSolver()
+        else:
+            solver = EquilibriumSolver()
 
-        solver = EquilibriumSolver()
-        solver.equilibrate(self)
+        self.ksi = solver.equilibrate(self)
 
-        print(1)
 
 class EquilibriumSolver:
     k_lim: float
@@ -232,14 +242,14 @@ class EquilibriumSolver:
         self.fabs = fabs
         self.ftol = ftol
 
-    def equilibrate(self, system: EquilibriumSystem):
+    def equilibrate(self, system: EquilibriumSystem) -> np.ndarray:
         n_reactions = len(system.log10_k)
         ksi = np.full(n_reactions, 0, dtype=float)
         
         while (1):
             F = np.abs(np.log10(system.get_Q(ksi)) - system.log10_k)
-            print("F = ", F)
-            print("ksi = ", ksi)
+            # print("F = ", F)
+            # print("ksi = ", ksi)
 
             if np.sum(np.abs(F)) < self.fabs:
                 self.ksi = ksi
@@ -291,3 +301,159 @@ class EquilibriumSolver:
                 if tol < self.ftol:
                     ksi[ri] = rs[1]
                     break
+        
+        return ksi
+
+class ScipyEquilibriumSolver:
+    def __init__(self, method='lm', tol=1e-12):
+        self.method = method
+        self.tol = tol
+
+    def equilibrate(self, system: EquilibriumSystem) -> np.ndarray:
+        n_reactions = len(system.log10_k)
+        ksi0 = np.full(n_reactions, 0.0, dtype=float)
+
+        def residuals(ksi):
+            Q = system.get_Q(ksi)
+            # Avoid log(0) or very small numbers
+            Q_safe = np.where(Q <= 1e-300, 1e-300, Q)
+            er = np.abs(np.log10(Q_safe) - system.log10_k)
+            # print(er)
+            return np.sum(er)
+        
+        def residuals2(ksi):
+            Q = system.get_Q(ksi)
+            # Avoid log(0) or very small numbers
+            Q_safe = np.where(Q <= 1e-300, 1e-300, Q)
+            er = np.abs(np.log10(Q_safe) - system.log10_k)
+            # print(er)
+            return er
+
+        sol = scipy.optimize.root(residuals2, ksi0, method="lm", tol=1e-6)
+        # sol = scipy.optimize.minimize(residuals, ksi0, method='Nelder-Mead', tol=1e-12, options={'maxiter': 10000})
+
+        # constraints = []
+        # for i in range(len(system.substances_list)):
+        #     constraints.append({'type': 'ineq', 'fun': lambda ksi, i=i: system.get_ni(ksi, i)})
+        
+        # constraints = []
+        # for i in range(len(system.substances_list)):
+        #     constraints.append(scipy.optimize.NonlinearConstraint(lambda ksi, i=i: system.get_ni(ksi, i), 0, np.inf))
+
+        # print(constraints[9].fun(ksi0))
+
+        # sol = scipy.optimize.minimize(residuals, ksi0, method='cobyla', tol=1e-12, options={'maxiter': 10000}, 
+        #     constraints=constraints,
+        # )
+
+        # bounds = []
+        # for i in range(len(system.reactions_v)):
+        #     bounds.append((0, 0.3))    
+        # sol = scipy.optimize.direct(residuals, bounds, len_tol=1e-9, maxiter=10000)
+        # # sol = scipy.optimize.shgo(residuals, bounds)
+        
+
+        
+        # Ensure final state is set
+        system.get_Q(sol.x)
+
+        if not sol.success:
+            print(f"Solver failed: {sol.message}")
+        
+        return sol.x
+
+
+class LevenbergMarquardtSolver:
+    def __init__(self, atol=1e-6, tol=1e-6, max_iter=100, lambda_init=0.01, lambda_factor=10.0):
+        self.atol = atol
+        self.tol = tol
+        self.max_iter = max_iter
+        self.lambda_init = lambda_init
+        self.lambda_factor = lambda_factor
+
+    def _jacobian(self, system, ksi, residuals_val):
+        """
+        Compute numerical Jacobian of residuals with respect to ksi using finite differences.
+        residuals_val is the current value of residuals(ksi).
+        """
+        n = len(ksi)
+        m = len(residuals_val)
+        J = np.zeros((m, n))
+        epsilon = 1e-8  # Small perturbation
+
+        for i in range(n):
+            ksi_perturbed = ksi.copy()
+            ksi_perturbed[i] += epsilon
+            
+            # Recalculate residuals for perturbed ksi
+            Q_perturbed = system.get_Q(ksi_perturbed)
+            Q_safe_p = np.where(Q_perturbed <= 1e-300, 1e-300, Q_perturbed)
+            residuals_p = np.log10(Q_safe_p) - system.log10_k
+            
+            J[:, i] = (residuals_p - residuals_val) / epsilon
+        
+        return J
+
+    def equilibrate(self, system: EquilibriumSystem) -> np.ndarray:
+        n_reactions = len(system.log10_k)
+        ksi = np.full(n_reactions, 0.0, dtype=float)
+        lambda_val = self.lambda_init
+
+        for iteration in range(self.max_iter):
+            # Calculate residuals
+            Q = system.get_Q(ksi)
+            Q_safe = np.where(Q <= 1e-300, 1e-300, Q)
+            residuals = np.log10(Q_safe) - system.log10_k
+            
+            # Check for convergence
+            cost = np.sum(residuals**2)
+            # cost = np.sum(np.abs(residuals))
+            # if cost < self.tol:
+            #     # Converged
+            #     break
+
+            if np.sum(np.abs(residuals)) < self.atol:
+                # Converged
+                break
+
+            # Calculate Jacobian
+            J = self._jacobian(system, ksi, residuals)
+
+            # JTJ + lambda * I * diag(JTJ)
+            JTJ = J.T @ J
+            
+            # Standard Levenberg-Marquardt damping
+            H = JTJ + lambda_val * np.eye(n_reactions)
+
+            g = J.T @ residuals
+
+            try:
+                delta = np.linalg.solve(H, -g)
+            except np.linalg.LinAlgError:
+                # If singular, increase damping and try again (simple retry logic)
+                lambda_val *= self.lambda_factor
+                continue
+
+            # Evaluate new point
+            ksi_new = ksi + delta
+            
+            Q_new = system.get_Q(ksi_new)
+            Q_safe_new = np.where(Q_new <= 1e-300, 1e-300, Q_new)
+            residuals_new = np.log10(Q_safe_new) - system.log10_k
+            cost_new = np.sum(residuals_new**2)
+
+            if cost_new < cost:
+                # Accept step
+                ksi = ksi_new
+                lambda_val /= self.lambda_factor
+                
+                # Check absolute convergence on change
+                if np.linalg.norm(delta) < self.tol and (cost - cost_new) < self.tol:
+                    #  break
+                    pass
+            else:
+                # Reject step and increase damping
+                lambda_val *= self.lambda_factor
+
+        system.ksi = ksi
+        return ksi
